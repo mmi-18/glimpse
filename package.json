@@ -7,15 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "tsx scripts/seed.ts",
-    "build:cloudflare": "opennextjs-cloudflare build",
-    "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",
-    "@opennextjs/cloudflare": "^1.19.4",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.3",
     "class-variance-authority": "^0.7.1",
@@ -39,7 +34,6 @@
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5",
-    "wrangler": "^4.85.0"
+    "typescript": "^5"
   }
 }

@@ -21,42 +21,22 @@ When in doubt, ask the question "how would Trade Republic / Pinterest / Instagra
 
 Apply migrations via the Supabase MCP tool (`mcp__…__apply_migration`) directly. Don't ask the user to paste SQL into the dashboard unless the MCP tool is unavailable. Migration files in `supabase/migrations/` are the source of truth for schema history.
 
-## Deploys: Cloudflare Workers via OpenNext
+## Deploys: Netlify
 
-The app deploys to Cloudflare Workers (NOT Netlify, NOT Vercel) using
-`@opennextjs/cloudflare`. The GitHub repo auto-deploys via Cloudflare
-Workers Builds.
+The app deploys to Netlify via the GitHub integration. `netlify.toml` at the
+repo root sets `command = "npm run build"`, `publish = ".next"`, and lists the
+`@netlify/plugin-nextjs` plugin (auto-installed by Netlify on detect).
 
-**Key files (do not break):**
-- `wrangler.jsonc` — entry, compat date, compat flags, `vars`, asset binding
-- `open-next.config.ts` — OpenNext adapter config
-- `next.config.ts` — must keep `images.unoptimized: true` (no Cloudflare Images binding) and call `initOpenNextCloudflareForDev()`
-- `public/_headers` — long-cache for `/_next/static/*` etc.
-- `.dev.vars` — dev-only env (`NEXTJS_ENV=development`); gitignored
-- `src/middleware.ts` — Edge runtime ONLY. **Do not rename to `proxy.ts`** — Next 16's Node-runtime `proxy.ts` is not yet supported by OpenNext on Cloudflare.
+**Env vars (set in Netlify dashboard → Site settings → Environment variables):**
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY` (mark as **Sensitive**; server-only, used by admin Supabase client + seed)
 
-**Required compatibility flags in `wrangler.jsonc`:** `nodejs_compat`, `global_fetch_strictly_public`. Compat date ≥ `2024-09-23`.
+**Auth redirect setup (Supabase → Authentication → URL Configuration):**
+- Site URL: the Netlify production URL
+- Redirect URLs: include both `http://localhost:3000/**` and the Netlify URL
 
-**Image policy:** every `<Image>` route uses `unoptimized: true`. Don't try to set up Next's image optimizer — it doesn't run on Workers. If we ever want resizing, add a Cloudflare Images binding (paid) or a custom loader, but it's not the default path.
-
-**Env vars:**
-- Public (`NEXT_PUBLIC_*`) live in `wrangler.jsonc` `vars` and are committed.
-- Secrets (`SUPABASE_SECRET_KEY`) are set in the Cloudflare dashboard or via `wrangler secret put`. Never commit secrets.
-
-**Cloudflare Workers Builds (auto-deploy from GitHub) settings:**
-- Build command: `npm run build:cloudflare`
-- Output: `.open-next` (wrangler reads from `wrangler.jsonc`)
-- Deploy command: `npx wrangler deploy` (CF runs this automatically after the build)
-
-**npm scripts:**
-- `npm run build:cloudflare` — build the Worker bundle
-- `npm run preview:cloudflare` — local preview (Workers runtime)
-- `npm run deploy:cloudflare` — manual deploy from local
-- `npm run cf-typegen` — regenerate `cloudflare-env.d.ts`
-
-**Common gotchas:**
-- **Do not add a `middleware.ts` or `proxy.ts`.** Next.js 16 runs both on the Node runtime; `@opennextjs/cloudflare` (as of 1.19.4) only supports Edge middleware and will fail with `ERROR Node.js middleware is not currently supported`. Tracking issue: opennextjs/opennextjs-cloudflare#962. Until that ships, do route-protection / session-refresh in Server Components or Server Actions instead. We accept that Supabase sessions don't auto-refresh — when a session token expires, the user is redirected to /login on their next request and re-signs-in.
-- A new server-side dependency that needs `fs`/`path`/`child_process`: it won't run on Workers. Either move the work to a script (`tsx scripts/foo.ts`) or use a Cloudflare-friendly equivalent.
-- Server actions and route handlers are fine — they run on the Worker.
-- The seed script (`scripts/seed.ts`) runs locally only; never deployed.
-- **Cloudflare Workers Builds dashboard build command must be `npm run build:cloudflare`.** If left at the default `npm run build`, wrangler will run an auto-migrate step that overwrites `wrangler.jsonc` with a stripped-down template (losing `vars`, asset bindings, etc.) and then fails on the same middleware error.
+**Edge middleware (`src/middleware.ts`)** runs on Netlify Edge Functions for
+the Supabase session refresh. Do not rename to `proxy.ts` (Next 16's Node-
+runtime form) without verifying the Netlify Next plugin supports it on the
+deployed plan.

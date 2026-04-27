@@ -36,16 +36,13 @@ yarn-error.log*
 # vercel
 .vercel
 
-# cloudflare / opennext
-.open-next
-.wrangler
-.dev.vars
+# netlify
+.netlify
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-cloudflare-env.d.ts
 
-# research / GTM artifacts (kept out of deploy + worker bundle)
+# research / GTM artifacts (kept out of deploys)
 /Glimpse/
 /Deep Research*.pdf
