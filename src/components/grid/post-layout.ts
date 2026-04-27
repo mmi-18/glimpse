@@ -29,7 +29,7 @@ export function buildPostCells(post: PostRow): GridCell<PostCellData>[] {
     cells.push({
       id: "desc",
       span,
-      data: { kind: "text", content: post.description, variant: "body" },
+      data: { kind: "text", content: post.description },
     });
   }
 

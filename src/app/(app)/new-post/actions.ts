@@ -16,23 +16,16 @@ export type NewPostInput = {
 };
 
 /**
- * Derive a post title from the cells: the first headline cell's content,
- * falling back to the first body cell (truncated), falling back to null.
+ * Derive a post title from the cells: the first text cell's content,
+ * truncated, falling back to null. (Earlier we distinguished headline vs
+ * body variants; now there's only one text style — keep the heuristic
+ * simple: use the first text cell.)
  */
 function deriveTitle(cells: GridCell<PostCellData>[]): string | null {
-  const headline = cells.find(
-    (c) => c.data.kind === "text" && c.data.variant === "headline",
-  );
-  if (headline && headline.data.kind === "text") {
-    const t = headline.data.content.trim();
+  const text = cells.find((c) => c.data.kind === "text");
+  if (text && text.data.kind === "text") {
+    const t = text.data.content.trim();
     if (t) return t.slice(0, 120);
-  }
-  const body = cells.find(
-    (c) => c.data.kind === "text" && c.data.variant === "body",
-  );
-  if (body && body.data.kind === "text") {
-    const t = body.data.content.trim();
-    if (t) return t.slice(0, 80);
   }
   return null;
 }

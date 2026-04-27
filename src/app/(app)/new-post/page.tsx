@@ -43,7 +43,8 @@ export default async function NewPostPage() {
         <h1 className="text-3xl font-medium tracking-tight">New post</h1>
         <p className="text-muted-foreground mt-1 text-sm">
           Add pictures and text, arrange them however you want. Drag the
-          corner handle to resize — snap to 1×1, 2×1, 1×2, or 2×2.
+          corner handle to resize (1×1, 2×1, 1×2, 2×2). Long-press any tile
+          and drag to reorder.
         </p>
       </header>
 

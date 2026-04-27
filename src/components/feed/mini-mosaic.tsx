@@ -3,13 +3,8 @@ import { cn } from "@/lib/utils";
 import type { GridCell } from "@/components/grid/types";
 import type { PostCellData } from "@/components/grid/cell-types";
 
-const TEXT_VARIANT_SMALL: Record<"headline" | "body" | "caption", string> = {
-  headline:
-    "text-[11px] sm:text-xs font-medium tracking-tight leading-tight line-clamp-3",
-  body: "text-[10px] sm:text-[11px] leading-snug line-clamp-4",
-  caption:
-    "text-[9px] sm:text-[10px] text-muted-foreground leading-snug line-clamp-3",
-};
+const TEXT_MINI_CLASS =
+  "text-[10px] sm:text-[11px] leading-snug text-foreground line-clamp-4";
 
 /**
  * Compact, read-only renderer used inside a uniform feed tile. 2×2 CSS grid
@@ -64,8 +59,8 @@ function MiniCell({ cell }: { cell: GridCell<PostCellData> }) {
       );
     case "text":
       return (
-        <div className="bg-card flex h-full w-full items-center justify-center p-2">
-          <p className={TEXT_VARIANT_SMALL[d.variant]}>{d.content}</p>
+        <div className="bg-warm flex h-full w-full items-center justify-center p-2">
+          <p className={TEXT_MINI_CLASS}>{d.content}</p>
         </div>
       );
     case "tags":

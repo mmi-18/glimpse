@@ -153,7 +153,6 @@ export function buildPortfolioCells(args: {
       data: {
         kind: "text",
         content: firstSentence,
-        variant: "body",
       },
     });
   }

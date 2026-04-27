@@ -233,7 +233,6 @@ function StepOneBuilder({
         data: {
           kind: "text" as const,
           content: "Write something…",
-          variant: "caption",
         },
       },
     ]);
@@ -412,7 +411,8 @@ function StepTwoPreview({
       <section>
         <p className="text-muted-foreground text-sm">
           Design the tile that shows in the feed. Resize cells with the
-          corner handle, snap to 1×1, 2×1, 1×2, or 2×2. Max 4 base cells.
+          corner handle, snap to 1×1, 2×1, 1×2, or 2×2. Long-press a cell
+          and drag to reorder. Max 4 base cells.
         </p>
       </section>
 
@@ -603,28 +603,31 @@ function EditableCell({
       ) : (
         <PostCellRenderer cell={cell} />
       )}
+      {/* 44×44 touch-friendly hit zone with a smaller 28×28 visual button
+          inside. data-noreorder + onPointerDown stopPropagation keep the
+          tap from triggering SpanGrid's long-press drag. */}
       <button
         type="button"
+        data-noreorder
+        onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
           onDelete();
         }}
-        className="absolute left-1 top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white transition-transform hover:scale-105 active:scale-95"
+        className="absolute left-0 top-0 z-10 flex h-11 w-11 cursor-pointer items-start justify-start p-1.5 touch-none"
         aria-label="Delete cell"
       >
-        <Trash2 className="h-3.5 w-3.5" />
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white shadow-sm transition-transform hover:scale-105 active:scale-95">
+          <Trash2 className="h-3.5 w-3.5" />
+        </span>
       </button>
     </div>
   );
 }
 
-const TEXT_VARIANT_CLASS = {
-  headline:
-    "text-lg sm:text-xl lg:text-2xl font-medium tracking-tight leading-tight",
-  body: "text-sm sm:text-base font-normal leading-relaxed",
-  caption: "text-xs font-normal text-muted-foreground leading-relaxed",
-} as const;
-
+// Inline editable text cell — single uniform style mirrors the read-only
+// renderer (warm bg, compact size). data-noreorder lets the SpanGrid's
+// long-press detector know not to start a drag from inside the textarea.
 function InlineTextCell({
   cell,
   onChange,
@@ -635,24 +638,16 @@ function InlineTextCell({
   if (cell.data.kind !== "text") return null;
   const d = cell.data;
   return (
-    <div className="border-border bg-card flex h-full w-full overflow-hidden rounded-2xl border">
-      <div className="flex h-full w-full flex-col overflow-y-auto p-4 sm:p-5">
+    <div className="bg-warm flex h-full w-full overflow-hidden rounded-2xl">
+      <div className="flex h-full w-full flex-col overflow-y-auto p-2.5 sm:p-3">
         <textarea
+          data-noreorder
           value={d.content}
           onChange={(e) => onChange(e.target.value)}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
-          className={cn(
-            "placeholder:text-muted-foreground/50 h-full w-full resize-none border-0 bg-transparent outline-none",
-            TEXT_VARIANT_CLASS[d.variant],
-          )}
-          placeholder={
-            d.variant === "headline"
-              ? "Your headline"
-              : d.variant === "body"
-                ? "Write something…"
-                : "Caption"
-          }
+          className="placeholder:text-muted-foreground/50 text-foreground h-full w-full resize-none border-0 bg-transparent text-xs leading-snug outline-none sm:text-sm"
+          placeholder="Write something…"
         />
       </div>
     </div>

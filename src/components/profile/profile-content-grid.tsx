@@ -192,7 +192,7 @@ function EditableSection({
                 <button
                   type="button"
                   onClick={onReset}
-                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+                  className="text-muted-foreground hover:text-foreground inline-flex min-h-[36px] items-center gap-1 px-2 text-xs"
                 >
                   <RotateCcw className="h-3 w-3" /> Reset
                 </button>
@@ -200,7 +200,7 @@ function EditableSection({
                   type="button"
                   onClick={onSave}
                   disabled={pending}
-                  className="bg-foreground text-background inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium disabled:opacity-50"
+                  className="bg-foreground text-background inline-flex min-h-[36px] items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium disabled:opacity-50"
                 >
                   {pending ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -214,7 +214,7 @@ function EditableSection({
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="border-border bg-card hover:bg-muted inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+                className="border-border bg-card hover:bg-muted inline-flex min-h-[36px] items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
               >
                 <Pencil className="h-3 w-3" /> Customize
               </button>
@@ -239,9 +239,10 @@ function EditableSection({
         />
       </div>
       {editing && (
-        <p className="text-muted-foreground mt-3 text-xs">
-          Drag the corner handle of any cell to resize — 1×1, 2×1, 1×2, 2×2.
-          Hit <span className="font-medium">Done</span> to save.
+        <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
+          Drag the corner handle to resize a tile — 1×1, 2×1, 1×2, 2×2.
+          Long-press a tile and drag to reorder. Hit{" "}
+          <span className="font-medium">Done</span> to save.
         </p>
       )}
     </section>

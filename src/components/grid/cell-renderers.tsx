@@ -10,7 +10,6 @@ import type { GridCell } from "@/components/grid/types";
 import type {
   PostCellData,
   ProfileCellData,
-  TextVariant,
 } from "@/components/grid/cell-types";
 
 // ---------------------------------------------------------------------------
@@ -25,15 +24,11 @@ function humanize(s?: string | null) {
     .join(" ");
 }
 
-const TEXT_VARIANT_CLASS: Record<TextVariant, string> = {
-  // Text cells are deliberately lighter than image cells — they're labels
-  // and pull-quotes, not full tiles. Caption is the default; the heavier
-  // variants stay for legacy posts and future authoring options.
-  headline:
-    "text-base sm:text-lg lg:text-xl font-medium tracking-tight leading-tight",
-  body: "text-sm font-normal leading-relaxed",
-  caption: "text-xs sm:text-sm font-normal leading-snug",
-};
+// Text cells are deliberately lighter than image cells — they're labels
+// and pull-quotes, not full tiles. One uniform compact size keeps the
+// authoring surface simple.
+const TEXT_CELL_CLASS =
+  "text-xs sm:text-sm font-normal leading-snug break-words";
 
 /**
  * Shell every cell uses — fills its grid area, rounded corners, clips overflow.
@@ -120,37 +115,25 @@ export function PostCellRenderer({
         </CellShell>
       );
     }
-    case "text": {
-      // Text cells use a lighter shell than image/widget cells to read as
-      // labels/pull-quotes rather than equally-weighted tiles. Caption is
-      // the lightest (warm bg, tight padding); headline/body keep card bg.
-      const isCaption = d.variant === "caption";
+    case "text":
+      // Compact label/pull-quote tile — warm background, tight padding,
+      // one uniform text size. Multiple paragraphs are split on blank lines.
       return (
-        <div
-          className={cn(
-            "flex h-full w-full overflow-hidden rounded-2xl",
-            isCaption
-              ? "bg-warm p-2.5 sm:p-3"
-              : "bg-card border-border border p-4 sm:p-5",
-          )}
-        >
+        <div className="bg-warm flex h-full w-full overflow-hidden rounded-2xl p-2.5 sm:p-3">
           <div
             className={cn(
               "flex h-full w-full flex-col overflow-y-auto",
               d.align === "center"
                 ? "items-center justify-center text-center"
-                : isCaption
-                  ? "items-start justify-center"
-                  : "",
+                : "items-start justify-center",
             )}
           >
-            <div className={cn(isCaption ? "space-y-1" : "space-y-2")}>
+            <div className="space-y-1">
               {d.content.split(/\n\n+/).map((para, i) => (
                 <p
                   key={i}
                   className={cn(
-                    "break-words",
-                    TEXT_VARIANT_CLASS[d.variant],
+                    TEXT_CELL_CLASS,
                     d.align === "center" && "text-center",
                   )}
                 >
@@ -161,7 +144,6 @@ export function PostCellRenderer({
           </div>
         </div>
       );
-    }
     case "voice":
       return (
         <CellShell padded background="card">
@@ -360,11 +342,9 @@ export function ProfileCellRenderer({
       );
     case "text":
       return (
-        <CellShell padded background="card">
-          <p className={cn("break-words", TEXT_VARIANT_CLASS[d.variant])}>
-            {d.content}
-          </p>
-        </CellShell>
+        <div className="bg-warm flex h-full w-full overflow-hidden rounded-2xl p-2.5 sm:p-3">
+          <p className={TEXT_CELL_CLASS}>{d.content}</p>
+        </div>
       );
   }
 }

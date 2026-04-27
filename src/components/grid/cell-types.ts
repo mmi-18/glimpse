@@ -3,9 +3,12 @@ import type { PostRow, StyleVector, UserRow, ReviewRow } from "@/lib/types";
 /**
  * Polymorphic cell payloads. A SpanGrid cell's `data` field is one of these.
  * A single renderer (PostCellRenderer, ProfileCellRenderer) dispatches on `kind`.
+ *
+ * Text cells render at a single compact "caption" size — small enough to sit
+ * comfortably under or alongside image tiles without dominating the grid.
+ * Earlier headline/body variants were dropped: anything bigger than caption
+ * was never the right move inside a tile.
  */
-
-export type TextVariant = "headline" | "body" | "caption";
 
 export type ImageFit = "cover" | "contain";
 export type ImagePosition =
@@ -37,7 +40,6 @@ export type PostCellData =
   | {
       kind: "text";
       content: string;
-      variant: TextVariant;
       align?: "left" | "center";
     }
   | {
@@ -112,5 +114,4 @@ export type ProfileCellData =
   | {
       kind: "text";
       content: string;
-      variant: TextVariant;
     };
