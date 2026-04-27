@@ -1,15 +1,12 @@
-import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MessageCircle, MapPin, Languages } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { MatchScoreBadge } from "@/components/feed/match-score-badge";
 import { MessageDialog } from "@/components/messaging/message-dialog";
-import { ImageCollage } from "@/components/feed/image-collage";
-import { ReviewsSection } from "@/components/profile/reviews-section";
-import { StyleRadar } from "@/components/profile/style-radar";
+import { Avatar } from "@/components/brand/avatar";
 import { Button } from "@/components/ui/button";
+import { ProfileContentGrid } from "@/components/profile/profile-content-grid";
 import { calculateMatchScore } from "@/lib/matching";
 import type {
   CreatorProfile,
@@ -129,19 +126,26 @@ export default async function CreatorProfilePage({
 
   const isOwn = currentUser?.id === id;
 
+  // Daily rate is blurred by default. We reveal it when:
+  //   1. the viewer is the creator themselves, or
+  //   2. the viewer is a logged-in company (startup) AND a conversation
+  //      already exists with this creator — the "match" signal.
+  let rateVisible = isOwn;
+  if (!rateVisible && currentUser && currentUser.user_type === "startup") {
+    const [a, b] = [currentUser.id, id].sort();
+    const { count } = await supabase
+      .from("conversations")
+      .select("id", { count: "exact", head: true })
+      .eq("participant_a", a)
+      .eq("participant_b", b);
+    rateVisible = (count ?? 0) > 0;
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 md:px-6">
       {/* Section 1 — Profile header */}
       <section className="flex flex-col gap-6 sm:flex-row sm:items-center">
-        {user.avatar_url && (
-          <Image
-            src={user.avatar_url}
-            alt={user.display_name ?? ""}
-            width={96}
-            height={96}
-            className="h-24 w-24 rounded-full border border-border"
-          />
-        )}
+        <Avatar src={user.avatar_url} name={user.display_name} size={96} />
         <div className="flex-1">
           <h1 className="text-3xl font-medium tracking-tight md:text-4xl">
             {user.display_name}
@@ -179,125 +183,21 @@ export default async function CreatorProfilePage({
         </div>
       </section>
 
-      {/* Section 2 — Portfolio grid */}
-      <section className="mt-12">
-        <h2 className="mb-5 text-lg font-medium">Portfolio</h2>
-        {posts.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            No portfolio pieces yet.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {posts.map((p) => (
-              <Link
-                key={p.id}
-                href={`/post/${p.id}`}
-                className="group block"
-              >
-                <ImageCollage
-                  images={p.media_urls ?? []}
-                  alt={p.title ?? "Portfolio piece"}
-                />
-                <p className="mt-2 text-sm font-medium">{p.title}</p>
-                {p.industry && (
-                  <p className="text-muted-foreground text-xs">
-                    {humanize(p.industry)}
-                  </p>
-                )}
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Section 3 — About + Reviews */}
-      <section className="mt-12 grid grid-cols-1 gap-10 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <h2 className="mb-5 text-lg font-medium">About</h2>
-          {(user.bio || profile?.creative_philosophy) && (
-            <p className="text-sm leading-relaxed">
-              {user.bio ?? profile?.creative_philosophy}
-            </p>
-          )}
-          {profile?.content_style_tags && profile.content_style_tags.length > 0 && (
-            <div className="mt-5">
-              <p className="text-muted-foreground mb-2 text-xs uppercase tracking-wider">
-                Style
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {profile.content_style_tags.map((t) => (
-                  <span
-                    key={t}
-                    className="bg-warm rounded-full px-3 py-1 text-xs"
-                  >
-                    {humanize(t)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {profile?.deliverable_types && profile.deliverable_types.length > 0 && (
-            <div className="mt-5">
-              <p className="text-muted-foreground mb-2 text-xs uppercase tracking-wider">
-                Delivers
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {profile.deliverable_types.map((t) => (
-                  <span
-                    key={t}
-                    className="border-border rounded-full border px-3 py-1 text-xs"
-                  >
-                    {humanize(t)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {profile?.industry_experience && profile.industry_experience.length > 0 && (
-            <div className="mt-5">
-              <p className="text-muted-foreground mb-2 text-xs uppercase tracking-wider">
-                Industry experience
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {profile.industry_experience.map((t) => (
-                  <span
-                    key={t}
-                    className="border-border rounded-full border px-3 py-1 text-xs"
-                  >
-                    {humanize(t)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {profile?.rate_min != null && profile?.rate_max != null && (
-            <div className="mt-5">
-              <p className="text-muted-foreground mb-1 text-xs uppercase tracking-wider">
-                Daily rate
-              </p>
-              <p className="text-sm">
-                €{profile.rate_min} – €{profile.rate_max}
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="lg:col-span-2">
-          {profile && profile.style_production_value != null && (
-            <>
-              <h2 className="mb-5 text-lg font-medium">Style signature</h2>
-              <div className="border-border bg-card rounded-2xl border p-5">
-                <StyleRadar vector={profile} />
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
-      <section className="mt-12">
-        <h2 className="mb-5 text-lg font-medium">Reviews</h2>
-        <ReviewsSection reviews={reviews} avg={avg} />
-      </section>
+      {/* Content grid — portfolio posts, about, voice, radar, reviews are all
+          cells in a SpanGrid. User-editable in Schritt 9. */}
+      <div className="mt-10">
+        <ProfileContentGrid
+          user={user}
+          profile={profile}
+          posts={posts}
+          reviews={reviews}
+          avg={avg}
+          rateVisible={rateVisible}
+          isOwner={isOwn}
+          savedPortfolioLayout={profile?.portfolio_layout ?? null}
+          savedAboutLayout={profile?.about_layout ?? null}
+        />
+      </div>
     </div>
   );
 }

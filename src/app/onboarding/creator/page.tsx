@@ -8,11 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { CalendarDays } from "lucide-react";
 import {
   CONTENT_CATEGORIES,
-  CONTENT_STYLE_TAGS,
   DELIVERABLE_TYPES,
-  AVAILABILITY,
   TURNAROUND,
   TRAVEL,
   LICENSING,
@@ -25,7 +24,7 @@ import {
 } from "@/lib/constants";
 import { saveCreatorOnboarding } from "@/app/onboarding/actions";
 
-const TOTAL_STEPS = 8;
+const TOTAL_STEPS = 6;
 
 function toArr(v: number | readonly number[] | undefined): number[] {
   if (Array.isArray(v)) return [...v];
@@ -39,14 +38,13 @@ type State = {
   location_country: string;
   languages: string[];
   cultural_markets: string[];
-  creative_discipline: "videographer" | "photographer" | "both" | "motion_designer";
+  creative_discipline:
+    | "videographer"
+    | "photographer"
+    | "both"
+    | "motion_designer";
   discipline: "video" | "photo" | "both";
   content_categories: string[];
-  content_style_tags: string[];
-  deliverable_types: string[];
-  rate_min: number;
-  rate_max: number;
-  availability: string;
   style_production_value: number;
   style_pacing: number;
   style_focus: number;
@@ -54,15 +52,18 @@ type State = {
   style_staging: number;
   style_color: number;
   style_sound: number;
+  deliverable_types: string[];
+  rate_min: number;
+  rate_max: number;
+  minimum_acceptable_budget: number;
+  travel_willingness: string;
+  typical_turnaround: string;
   sub_specializations: string[];
   industry_experience: string[];
   production_capabilities: string[];
   preferred_project_types: string[];
   unwanted_work_types: string[];
   usage_licensing_preference: string;
-  travel_willingness: string;
-  typical_turnaround: string;
-  minimum_acceptable_budget: number;
   creative_philosophy: string;
 };
 
@@ -75,11 +76,6 @@ const INITIAL: State = {
   creative_discipline: "both",
   discipline: "both",
   content_categories: [],
-  content_style_tags: [],
-  deliverable_types: [],
-  rate_min: 400,
-  rate_max: 1000,
-  availability: "within_1_week",
   style_production_value: 5,
   style_pacing: 5,
   style_focus: 5,
@@ -87,15 +83,18 @@ const INITIAL: State = {
   style_staging: 5,
   style_color: 5,
   style_sound: 5,
+  deliverable_types: [],
+  rate_min: 400,
+  rate_max: 1000,
+  minimum_acceptable_budget: 300,
+  travel_willingness: "international",
+  typical_turnaround: "1_week",
   sub_specializations: [],
   industry_experience: [],
   production_capabilities: [],
   preferred_project_types: [],
   unwanted_work_types: [],
   usage_licensing_preference: "negotiable",
-  travel_willingness: "international",
-  typical_turnaround: "1_week",
-  minimum_acceptable_budget: 300,
   creative_philosophy: "",
 };
 
@@ -141,9 +140,8 @@ export default function CreatorOnboarding() {
     state.display_name.trim() &&
     state.location_city.trim() &&
     state.languages.length > 0;
-  const step2Valid =
-    state.content_categories.length > 0 && state.content_style_tags.length > 0;
-  const step3Valid = state.deliverable_types.length > 0;
+  const step2Valid = state.content_categories.length > 0;
+  const step4Valid = state.deliverable_types.length > 0;
 
   return (
     <>
@@ -209,7 +207,7 @@ export default function CreatorOnboarding() {
           stepIndex={1}
           totalSteps={TOTAL_STEPS}
           title="What you do"
-          subtitle="Pick your discipline, the categories you cover, and the style tags that describe your work."
+          subtitle="Pick your discipline and the categories you cover."
           onBack={back}
           onNext={next}
           nextDisabled={!step2Valid}
@@ -247,41 +245,12 @@ export default function CreatorOnboarding() {
               onChange={(v) => set("content_categories", v)}
             />
           </div>
-          <div className="space-y-3">
-            <Label>Style tags that describe your work</Label>
-            <ChipGroup
-              options={CONTENT_STYLE_TAGS}
-              value={state.content_style_tags}
-              onChange={(v) => set("content_style_tags", v)}
-            />
-          </div>
         </StepShell>
       )}
 
       {step === 2 && (
         <StepShell
           stepIndex={2}
-          totalSteps={TOTAL_STEPS}
-          title="Your work"
-          subtitle="What formats do you deliver? You can add portfolio links later from your profile."
-          onBack={back}
-          onNext={next}
-          nextDisabled={!step3Valid}
-        >
-          <div className="space-y-3">
-            <Label>Deliverable types you offer</Label>
-            <ChipGroup
-              options={DELIVERABLE_TYPES}
-              value={state.deliverable_types}
-              onChange={(v) => set("deliverable_types", v)}
-            />
-          </div>
-        </StepShell>
-      )}
-
-      {step === 3 && (
-        <StepShell
-          stepIndex={3}
           totalSteps={TOTAL_STEPS}
           title="Your style"
           subtitle="Seven dimensions that define how your work looks and feels. Move each slider to show where your work sits."
@@ -303,15 +272,25 @@ export default function CreatorOnboarding() {
         </StepShell>
       )}
 
-      {step === 4 && (
+      {step === 3 && (
         <StepShell
-          stepIndex={4}
+          stepIndex={3}
           totalSteps={TOTAL_STEPS}
-          title="Your rate"
-          subtitle="Your daily rate range and when you can take on work."
+          title="Your work"
+          subtitle="What you deliver, what you charge, and how you work."
           onBack={back}
           onNext={next}
+          nextDisabled={!step4Valid}
         >
+          <div className="space-y-3">
+            <Label>Deliverable types you offer</Label>
+            <ChipGroup
+              options={DELIVERABLE_TYPES}
+              value={state.deliverable_types}
+              onChange={(v) => set("deliverable_types", v)}
+            />
+          </div>
+
           <div className="border-border bg-card rounded-xl border p-5">
             <div className="mb-4 flex items-center justify-between">
               <span className="font-medium">Daily rate range (EUR)</span>
@@ -333,23 +312,61 @@ export default function CreatorOnboarding() {
               }}
             />
           </div>
+
+          <div className="border-border bg-card rounded-xl border p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="font-medium">Minimum acceptable budget</span>
+              <span className="text-muted-foreground text-sm">
+                €{state.minimum_acceptable_budget}
+              </span>
+            </div>
+            <Slider
+              min={0}
+              max={5000}
+              step={100}
+              value={[state.minimum_acceptable_budget]}
+              onValueChange={(v) =>
+                set("minimum_acceptable_budget", toArr(v)[0] ?? 300)
+              }
+            />
+          </div>
+
           <div className="space-y-3">
-            <Label>Availability</Label>
+            <Label>Travel willingness</Label>
             <ChipGroup
-              options={AVAILABILITY}
-              value={[state.availability]}
+              options={TRAVEL}
+              value={[state.travel_willingness]}
               onChange={(v) =>
-                set("availability", v[0] ?? "within_1_week")
+                set("travel_willingness", v[0] ?? "international")
               }
               allowMultiple={false}
             />
           </div>
+
+          <div className="space-y-3">
+            <Label>Typical turnaround</Label>
+            <ChipGroup
+              options={TURNAROUND}
+              value={[state.typical_turnaround]}
+              onChange={(v) => set("typical_turnaround", v[0] ?? "1_week")}
+              allowMultiple={false}
+            />
+          </div>
+
+          <div className="bg-warm flex items-start gap-3 rounded-xl p-4 text-sm">
+            <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" />
+            <p className="text-muted-foreground">
+              You&apos;ll set your availability from the calendar on your
+              profile — block dates manually or sync with Google, Outlook, or
+              Apple Calendar.
+            </p>
+          </div>
         </StepShell>
       )}
 
-      {step === 5 && (
+      {step === 4 && (
         <StepShell
-          stepIndex={5}
+          stepIndex={4}
           totalSteps={TOTAL_STEPS}
           title="Go deeper"
           subtitle="Sub-specializations, industry experience, and production capabilities."
@@ -385,16 +402,18 @@ export default function CreatorOnboarding() {
         </StepShell>
       )}
 
-      {step === 6 && (
+      {step === 5 && (
         <StepShell
-          stepIndex={6}
+          stepIndex={5}
           totalSteps={TOTAL_STEPS}
           title="Preferences"
           subtitle="What do you want more of — and what do you never want to shoot again?"
           onBack={back}
-          onNext={next}
-          onSkip={next}
+          onNext={finish}
+          onSkip={finish}
           isImportant
+          nextLabel={pending ? "Saving…" : "Finish"}
+          nextDisabled={pending}
         >
           <div className="space-y-3">
             <Label>Preferred project types</Label>
@@ -441,59 +460,6 @@ export default function CreatorOnboarding() {
                 set("usage_licensing_preference", v[0] ?? "negotiable")
               }
               allowMultiple={false}
-            />
-          </div>
-        </StepShell>
-      )}
-
-      {step === 7 && (
-        <StepShell
-          stepIndex={7}
-          totalSteps={TOTAL_STEPS}
-          title="Logistics"
-          subtitle="Final details on travel, turnaround, and your creative philosophy."
-          onBack={back}
-          onNext={finish}
-          onSkip={finish}
-          isImportant
-          nextLabel={pending ? "Saving…" : "Finish"}
-          nextDisabled={pending}
-        >
-          <div className="space-y-3">
-            <Label>Travel willingness</Label>
-            <ChipGroup
-              options={TRAVEL}
-              value={[state.travel_willingness]}
-              onChange={(v) => set("travel_willingness", v[0] ?? "international")}
-              allowMultiple={false}
-            />
-          </div>
-          <div className="space-y-3">
-            <Label>Typical turnaround</Label>
-            <ChipGroup
-              options={TURNAROUND}
-              value={[state.typical_turnaround]}
-              onChange={(v) => set("typical_turnaround", v[0] ?? "1_week")}
-              allowMultiple={false}
-            />
-          </div>
-          <div className="border-border bg-card rounded-xl border p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <span className="font-medium">
-                Minimum acceptable project budget (EUR)
-              </span>
-              <span className="text-muted-foreground text-sm">
-                €{state.minimum_acceptable_budget}
-              </span>
-            </div>
-            <Slider
-              min={0}
-              max={5000}
-              step={100}
-              value={[state.minimum_acceptable_budget]}
-              onValueChange={(v) =>
-                set("minimum_acceptable_budget", toArr(v)[0] ?? 300)
-              }
             />
           </div>
           <div className="space-y-2">

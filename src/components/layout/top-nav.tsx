@@ -2,19 +2,29 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Inbox, Search, LayoutGrid, UserRound, LogOut } from "lucide-react";
+import {
+  Inbox,
+  Sparkles,
+  LayoutGrid,
+  UserRound,
+  LogOut,
+  Plus,
+} from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { Avatar } from "@/components/brand/avatar";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
-type NavUser = { id: string; display_name: string | null; avatar_url: string | null; user_type: "creator" | "startup" } | null;
-
-const tabs = [
-  { href: "/feed", label: "Feed", icon: LayoutGrid },
-  { href: "/discover", label: "Discover", icon: Search },
-  { href: "/inbox", label: "Inbox", icon: Inbox },
-] as const;
+type NavUser =
+  | {
+      id: string;
+      display_name: string | null;
+      avatar_url: string | null;
+      user_type: "creator" | "startup";
+      membership_tier: "free" | "pro";
+    }
+  | null;
 
 export function TopNav({ user }: { user: NavUser }) {
   const pathname = usePathname();
@@ -27,11 +37,26 @@ export function TopNav({ user }: { user: NavUser }) {
     router.refresh();
   }
 
+  const tabs =
+    user?.user_type === "startup"
+      ? [
+          { href: "/feed", label: "Feed", icon: LayoutGrid },
+          { href: "/brief", label: "Brief", icon: Sparkles },
+          { href: "/inbox", label: "Inbox", icon: Inbox },
+        ]
+      : [
+          { href: "/feed", label: "Feed", icon: LayoutGrid },
+          { href: "/inbox", label: "Inbox", icon: Inbox },
+        ];
+
   return (
-    <header className="border-border bg-background sticky top-0 z-30 hidden border-b backdrop-blur md:block">
+    <header
+      className="border-border bg-background sticky top-0 z-30 hidden border-b backdrop-blur md:block"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         <div className="flex items-center gap-10">
-          <Logo />
+          <Logo href="/feed" size="md" />
           <nav className="flex items-center gap-6">
             {tabs.map((t) => {
               const active = pathname?.startsWith(t.href);
@@ -55,15 +80,36 @@ export function TopNav({ user }: { user: NavUser }) {
         <div className="flex items-center gap-3">
           {user ? (
             <>
+              {user.user_type === "creator" && (
+                <Link
+                  href="/new-post"
+                  className={buttonVariants({
+                    size: "sm",
+                    className: "h-8 gap-1",
+                  })}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  New post
+                </Link>
+              )}
+              {user.membership_tier === "pro" && (
+                <span className="bg-foreground text-background rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider">
+                  Pro
+                </span>
+              )}
               <Link
                 href={
                   user.user_type === "creator"
                     ? `/creator/${user.id}`
-                    : `/startup/${user.id}`
+                    : `/feed`
                 }
                 className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm"
               >
-                <UserRound className="h-4 w-4" />
+                <Avatar
+                  src={user.avatar_url}
+                  name={user.display_name}
+                  size={28}
+                />
                 <span>{user.display_name ?? "Profile"}</span>
               </Link>
               <Button

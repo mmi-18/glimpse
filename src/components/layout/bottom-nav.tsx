@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Inbox, Search, LayoutGrid, UserRound } from "lucide-react";
+import { Inbox, Sparkles, LayoutGrid, UserRound, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function BottomNav({
@@ -17,18 +17,35 @@ export function BottomNav({
     userId && userType
       ? userType === "creator"
         ? `/creator/${userId}`
-        : `/startup/${userId}`
+        : "/feed"
       : "/login";
 
-  const tabs = [
-    { href: "/feed", label: "Feed", icon: LayoutGrid },
-    { href: "/discover", label: "Discover", icon: Search },
-    { href: "/inbox", label: "Inbox", icon: Inbox },
-    { href: profileHref, label: "Profile", icon: UserRound },
-  ];
+  const tabs =
+    userType === "startup"
+      ? [
+          { href: "/feed", label: "Feed", icon: LayoutGrid },
+          { href: "/brief", label: "Brief", icon: Sparkles },
+          { href: "/inbox", label: "Inbox", icon: Inbox },
+          { href: profileHref, label: "Profile", icon: UserRound },
+        ]
+      : userType === "creator"
+        ? [
+            { href: "/feed", label: "Feed", icon: LayoutGrid },
+            { href: "/new-post", label: "Post", icon: Plus },
+            { href: "/inbox", label: "Inbox", icon: Inbox },
+            { href: profileHref, label: "Profile", icon: UserRound },
+          ]
+        : [
+            { href: "/feed", label: "Feed", icon: LayoutGrid },
+            { href: "/inbox", label: "Inbox", icon: Inbox },
+            { href: profileHref, label: "Profile", icon: UserRound },
+          ];
 
   return (
-    <nav className="bg-background border-border fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t md:hidden">
+    <nav
+      className="bg-background border-border fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t md:hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
       {tabs.map((t) => {
         const active =
           pathname === t.href ||
@@ -39,7 +56,7 @@ export function BottomNav({
             key={t.label}
             href={t.href}
             className={cn(
-              "flex flex-col items-center gap-1 px-4 py-2 text-[11px] transition-colors",
+              "flex flex-col items-center gap-1 px-3 py-2 text-[11px] transition-colors",
               active ? "text-foreground" : "text-muted-foreground",
             )}
           >

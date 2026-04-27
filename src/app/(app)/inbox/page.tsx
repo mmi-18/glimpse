@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { MatchScoreBadge } from "@/components/feed/match-score-badge";
+import { Avatar } from "@/components/brand/avatar";
 import type { ConversationRow, MessageRow, UserRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -116,15 +116,11 @@ export default async function InboxPage() {
                   highMatch && "ring-1 ring-foreground/10",
                 )}
               >
-                {other?.avatar_url && (
-                  <Image
-                    src={other.avatar_url}
-                    alt={other.display_name ?? ""}
-                    width={44}
-                    height={44}
-                    className="rounded-full border border-border"
-                  />
-                )}
+                <Avatar
+                  src={other?.avatar_url}
+                  name={other?.display_name}
+                  size={44}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
                     <p className="font-medium">{other?.display_name}</p>

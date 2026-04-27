@@ -1,9 +1,28 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ImageCollage } from "@/components/feed/image-collage";
+import { MiniMosaic } from "@/components/feed/mini-mosaic";
 import { MatchScoreBadge } from "@/components/feed/match-score-badge";
+import { Avatar } from "@/components/brand/avatar";
 import type { PostRow, UserRow } from "@/lib/types";
+import type { GridCell } from "@/components/grid/types";
+import type { PostCellData } from "@/components/grid/cell-types";
 import { cn } from "@/lib/utils";
+
+function isGridCellArray(value: unknown): value is GridCell<PostCellData>[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (c) =>
+        c &&
+        typeof c === "object" &&
+        "span" in c &&
+        "data" in c &&
+        c.data &&
+        typeof (c.data as { kind?: unknown }).kind === "string",
+    )
+  );
+}
 
 type FeedItem = {
   post: PostRow;
@@ -12,142 +31,164 @@ type FeedItem = {
     "id" | "display_name" | "avatar_url" | "user_type" | "location_city"
   >;
   matchScore: number | null;
+  topPick?: boolean;
 };
 
 function humanize(s?: string | null) {
   if (!s) return "";
-  return s.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  return s
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
+/**
+ * Feed card. Uniform sizing — each card is the same height regardless of
+ * content. Square image on top + fixed 2-line footer below. Richness lives
+ * on the Post Detail page, not here.
+ */
 export function PostCard({ item }: { item: FeedItem }) {
-  const { post, author, matchScore } = item;
-  if (author.user_type === "startup") {
+  if (item.author.user_type === "startup") {
     return <JobCard item={item} />;
   }
+  return <CreatorCard item={item} />;
+}
+
+function CardShell({
+  href,
+  topPick,
+  children,
+}: {
+  href: string;
+  topPick?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <Link
-      href={`/post/${post.id}`}
-      className="border-border bg-card group block overflow-hidden rounded-2xl border transition-colors hover:border-foreground/20"
+      href={href}
+      className={cn(
+        "border-border bg-card group flex flex-col overflow-hidden rounded-2xl border transition-colors hover:border-foreground/20",
+        topPick && "ring-2 ring-[var(--match)] border-transparent",
+      )}
     >
-      <ImageCollage
-        images={post.media_urls ?? []}
-        alt={post.title ?? "Portfolio piece"}
-        className="w-full"
-      />
-      <div className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            {author.avatar_url && (
-              <Image
-                src={author.avatar_url}
-                alt={author.display_name ?? ""}
-                width={28}
-                height={28}
-                className="rounded-full"
-              />
-            )}
-            <div>
-              <p className="text-sm font-medium leading-tight">
-                {author.display_name}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {author.location_city}
-              </p>
-            </div>
-          </div>
-          {matchScore != null && (
-            <MatchScoreBadge score={matchScore} size="sm" />
-          )}
-        </div>
-        <div className="mt-3 flex items-center gap-2">
-          {post.content_type && (
-            <span className="border-border rounded-full border px-2 py-0.5 text-[11px]">
-              {humanize(post.content_type)}
-            </span>
-          )}
-          {post.industry && (
-            <span className="bg-warm rounded-full px-2 py-0.5 text-[11px]">
-              {humanize(post.industry)}
-            </span>
-          )}
-        </div>
-      </div>
+      {children}
     </Link>
   );
 }
 
+function CardFooter({
+  author,
+  matchScore,
+  business,
+  tag,
+}: {
+  author: FeedItem["author"];
+  matchScore: number | null;
+  business?: boolean;
+  tag?: string | null;
+}) {
+  return (
+    <div className="flex h-[4.5rem] flex-col justify-between gap-1.5 p-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <Avatar
+          src={author.avatar_url}
+          name={author.display_name}
+          size={22}
+        />
+        <p className="min-w-0 flex-1 truncate text-xs font-medium">
+          {author.display_name}
+        </p>
+        {business && (
+          <span className="bg-foreground text-background shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider">
+            Biz
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5">
+        {tag && (
+          <span className="bg-warm truncate rounded-full px-2 py-0.5 text-[10px]">
+            {humanize(tag)}
+          </span>
+        )}
+        {matchScore != null && (
+          <MatchScoreBadge score={matchScore} size="sm" className="ml-auto shrink-0" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CreatorCard({ item }: { item: FeedItem }) {
+  const { post, author, matchScore, topPick } = item;
+  const preview = isGridCellArray(post.preview_layout)
+    ? post.preview_layout
+    : null;
+  return (
+    <CardShell href={`/post/${post.id}`} topPick={topPick}>
+      {preview && preview.length > 0 ? (
+        <MiniMosaic cells={preview} />
+      ) : (
+        <ImageCollage
+          images={post.media_urls ?? []}
+          alt={post.title ?? "Portfolio piece"}
+          aspect="1/1"
+          className="!rounded-none w-full"
+        />
+      )}
+      <CardFooter
+        author={author}
+        matchScore={matchScore}
+        tag={post.content_type ?? post.industry}
+      />
+    </CardShell>
+  );
+}
+
 function JobCard({ item }: { item: FeedItem }) {
-  const { post, author, matchScore } = item;
-  const hasImage = (post.media_urls?.length ?? 0) > 0 && post.media_urls?.[0];
+  const { post, author, matchScore, topPick } = item;
+  const images = post.media_urls ?? [];
 
   return (
-    <Link
-      href={`/post/${post.id}`}
-      className="border-border bg-card group block overflow-hidden rounded-2xl border transition-colors hover:border-foreground/20"
-    >
-      <div
-        className={cn(
-          "relative flex flex-col justify-end overflow-hidden",
-          hasImage ? "" : "bg-gradient-to-br from-warm via-surface to-background",
-        )}
-        style={{ aspectRatio: "3/2" }}
-      >
-        {hasImage ? (
+    <CardShell href={`/post/${post.id}`} topPick={topPick}>
+      <div className="relative aspect-square w-full overflow-hidden">
+        {images.length >= 2 ? (
+          <div className="grid h-full grid-cols-2 gap-0.5">
+            {images.slice(0, 2).map((src, i) => (
+              <div key={i} className="relative">
+                <Image
+                  src={src}
+                  alt={`${post.title ?? "Job"} ${i + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 25vw, 12vw"
+                />
+              </div>
+            ))}
+          </div>
+        ) : images.length === 1 ? (
           <Image
-            src={post.media_urls![0]}
-            alt={post.title ?? "Job listing"}
+            src={images[0]}
+            alt={post.title ?? "Job"}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, 33vw"
+            sizes="(max-width: 768px) 50vw, 17vw"
           />
         ) : (
-          <div className="flex flex-1 items-center justify-center">
-            {author.avatar_url && (
-              <Image
-                src={author.avatar_url}
-                alt={author.display_name ?? ""}
-                width={72}
-                height={72}
-                className="rounded-full border border-border"
-              />
-            )}
+          <div className="from-warm via-surface to-background flex h-full w-full items-center justify-center bg-gradient-to-br">
+            <Avatar
+              src={author.avatar_url}
+              name={author.display_name}
+              size={56}
+            />
           </div>
         )}
       </div>
-      <div className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            {author.avatar_url && (
-              <Image
-                src={author.avatar_url}
-                alt={author.display_name ?? ""}
-                width={28}
-                height={28}
-                className="rounded-full border border-border"
-              />
-            )}
-            <p className="text-sm font-medium">{author.display_name}</p>
-          </div>
-          {matchScore != null && (
-            <MatchScoreBadge score={matchScore} size="sm" />
-          )}
-        </div>
-        <p className="mt-2 line-clamp-2 text-sm leading-snug">
-          {post.description}
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {post.content_type && (
-            <span className="border-border rounded-full border px-2 py-0.5 text-[11px]">
-              {humanize(post.content_type)}
-            </span>
-          )}
-          {post.industry && (
-            <span className="bg-warm rounded-full px-2 py-0.5 text-[11px]">
-              {humanize(post.industry)}
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
+      <CardFooter
+        author={author}
+        matchScore={matchScore}
+        business
+        tag={post.industry ?? post.content_type}
+      />
+    </CardShell>
   );
 }

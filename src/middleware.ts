@@ -1,7 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
+// Edge runtime — required by OpenNext / Cloudflare Workers. Next.js 16
+// renamed middleware → proxy (Node runtime). Edge middleware via the
+// legacy middleware.ts convention still works and is the only flavor
+// OpenNext supports on Cloudflare today.
+export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

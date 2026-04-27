@@ -37,15 +37,17 @@ export default function LoginPage() {
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-6 py-12">
       <div className="w-full max-w-sm">
-        <Link href="/" className="mb-8 flex items-center justify-center gap-2">
-          <Image
-            src="/images/glimpse-logo.jpeg"
-            alt="glimpse."
-            width={32}
-            height={32}
-            className="rounded-full"
-          />
-          <span className="brand-wordmark text-xl">glimpse.</span>
+        <Link href="/" className="mb-10 flex items-center justify-center gap-3">
+          <div className="bg-foreground flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl">
+            <Image
+              src="/images/glimpse-logo.png"
+              alt="glimpse."
+              width={56}
+              height={56}
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <span className="brand-wordmark text-2xl">glimpse.</span>
         </Link>
 
         <h1 className="mb-2 text-2xl font-medium">Welcome back</h1>

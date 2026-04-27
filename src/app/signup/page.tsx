@@ -1,63 +1,60 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { createAccount } from "@/app/signup/actions";
 
 function SignupForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const initialType =
-    params.get("type") === "startup" ? "startup" : "creator";
+  const initialType = params.get("type") === "startup" ? "startup" : "creator";
 
   const [userType, setUserType] = useState<"creator" | "startup">(initialType);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [pending, startTransition] = useTransition();
 
-  async function submit(e: React.FormEvent) {
+  function submit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { user_type: userType, display_name: displayName },
-      },
+    startTransition(async () => {
+      const res = await createAccount({
+        email,
+        password,
+        displayName,
+        userType,
+      });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      router.push("/membership");
+      router.refresh();
     });
-    setLoading(false);
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    router.push(
-      userType === "creator" ? "/onboarding/creator" : "/onboarding/startup",
-    );
-    router.refresh();
   }
 
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-6 py-12">
       <div className="w-full max-w-sm">
-        <Link href="/" className="mb-8 flex items-center justify-center gap-2">
-          <Image
-            src="/images/glimpse-logo.jpeg"
-            alt="glimpse."
-            width={32}
-            height={32}
-            className="rounded-full"
-          />
-          <span className="brand-wordmark text-xl">glimpse.</span>
+        <Link href="/" className="mb-10 flex items-center justify-center gap-3">
+          <div className="bg-foreground flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl">
+            <Image
+              src="/images/glimpse-logo.png"
+              alt="glimpse."
+              width={56}
+              height={56}
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <span className="brand-wordmark text-2xl">glimpse.</span>
         </Link>
 
         <h1 className="mb-2 text-2xl font-medium">Create your account</h1>
@@ -65,7 +62,7 @@ function SignupForm() {
           Choose your role to get the right onboarding.
         </p>
 
-        <div className="mb-6 grid grid-cols-2 gap-2 rounded-xl border p-1">
+        <div className="border-border mb-6 grid grid-cols-2 gap-2 rounded-xl border p-1">
           <button
             type="button"
             onClick={() => setUserType("creator")}
@@ -128,14 +125,17 @@ function SignupForm() {
             />
           </div>
           {error && <p className="text-destructive text-sm">{error}</p>}
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Creating account…" : "Create account"}
+          <Button type="submit" className="w-full" disabled={pending}>
+            {pending ? "Creating account…" : "Create account"}
           </Button>
         </form>
 
         <p className="text-muted-foreground mt-6 text-center text-sm">
           Already on glimpse.?{" "}
-          <Link href="/login" className="text-foreground underline-offset-4 hover:underline">
+          <Link
+            href="/login"
+            className="text-foreground underline-offset-4 hover:underline"
+          >
             Sign in
           </Link>
         </p>

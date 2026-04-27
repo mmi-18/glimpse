@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MessageCircle } from "lucide-react";
@@ -6,12 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { MatchScoreBadge } from "@/components/feed/match-score-badge";
 import { MessageDialog } from "@/components/messaging/message-dialog";
+import { Avatar } from "@/components/brand/avatar";
 import { Button } from "@/components/ui/button";
+import { PostContentGrid } from "@/components/post/post-content-grid";
 import {
   calculateMatchScore,
   calculatePostMatchScore,
 } from "@/lib/matching";
-import { STYLE_DIMENSIONS } from "@/lib/constants";
 import type {
   CreatorProfile,
   IndustrySimilarityRow,
@@ -151,7 +151,6 @@ export default async function PostDetailPage({
     );
   }
 
-  const images = post.media_urls ?? [];
   const isOwn = currentUser?.id === author.id;
   const profileHref =
     author.user_type === "creator" ? `/creator/${author.id}` : "#";
@@ -173,15 +172,11 @@ export default async function PostDetailPage({
           href={profileHref}
           className="flex items-center gap-3 hover:opacity-80"
         >
-          {author.avatar_url && (
-            <Image
-              src={author.avatar_url}
-              alt={author.display_name ?? ""}
-              width={44}
-              height={44}
-              className="rounded-full border border-border"
-            />
-          )}
+          <Avatar
+            src={author.avatar_url}
+            name={author.display_name}
+            size={44}
+          />
           <div>
             <p className="font-medium">{author.display_name}</p>
             <p className="text-muted-foreground text-xs">
@@ -213,85 +208,21 @@ export default async function PostDetailPage({
         </div>
       </div>
 
-      {/* Title + description */}
-      <header className="mb-8">
+      {/* Title + business-brief badge */}
+      <header className="mb-6">
+        {author.user_type === "startup" && (
+          <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-background">
+            Business brief
+          </div>
+        )}
         <h1 className="text-3xl font-medium tracking-tight md:text-4xl">
           {post.title}
         </h1>
-        {post.description && (
-          <p className="text-muted-foreground mt-3 max-w-2xl text-base leading-relaxed">
-            {post.description}
-          </p>
-        )}
-        <div className="mt-4 flex flex-wrap gap-2">
-          {post.content_type && (
-            <span className="border-border rounded-full border px-3 py-1 text-xs">
-              {humanize(post.content_type)}
-            </span>
-          )}
-          {post.industry && (
-            <span className="bg-warm rounded-full px-3 py-1 text-xs">
-              {humanize(post.industry)}
-            </span>
-          )}
-          {post.format && (
-            <span className="bg-muted rounded-full px-3 py-1 text-xs">
-              {humanize(post.format)}
-            </span>
-          )}
-        </div>
       </header>
 
-      {/* Images */}
-      {images.length > 0 && (
-        <div className="mb-10 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {images.map((src, i) => (
-            <div
-              key={i}
-              className={`relative overflow-hidden rounded-2xl bg-muted ${
-                i === 0 ? "md:col-span-2" : ""
-              }`}
-              style={{ aspectRatio: i === 0 ? "16/10" : "4/3" }}
-            >
-              <Image
-                src={src}
-                alt={`${post.title} ${i + 1}`}
-                fill
-                className="object-cover"
-                sizes={i === 0 ? "100vw" : "50vw"}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Style dimensions */}
-      {post.style_production_value != null && (
-        <section className="border-border bg-card rounded-2xl border p-6">
-          <h2 className="mb-4 text-sm font-medium uppercase tracking-wider text-muted-foreground">
-            Style of this piece
-          </h2>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {STYLE_DIMENSIONS.map((dim) => {
-              const value = post[dim.key] ?? 5;
-              return (
-                <div key={dim.key}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span>{dim.label}</span>
-                    <span className="text-muted-foreground">{value} / 10</span>
-                  </div>
-                  <div className="bg-muted mt-1 h-1 w-full overflow-hidden rounded-full">
-                    <div
-                      className="bg-foreground h-full"
-                      style={{ width: `${((value - 1) / 9) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      {/* Content grid — each section is a cell in a SpanGrid */}
+      <PostContentGrid post={post} />
     </div>
   );
 }
+

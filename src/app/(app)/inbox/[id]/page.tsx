@@ -1,10 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { MatchScoreBadge } from "@/components/feed/match-score-badge";
+import { Avatar } from "@/components/brand/avatar";
 import { ConversationComposer } from "@/components/messaging/conversation-composer";
 import type { ConversationRow, MessageRow, UserRow } from "@/lib/types";
 
@@ -80,15 +80,11 @@ export default async function ConversationPage({
         >
           <ArrowLeft className="h-4 w-4" />
           <Link href={profileHref} className="flex items-center gap-3">
-            {other.avatar_url && (
-              <Image
-                src={other.avatar_url}
-                alt={other.display_name ?? ""}
-                width={36}
-                height={36}
-                className="rounded-full border border-border"
-              />
-            )}
+            <Avatar
+              src={other.avatar_url}
+              name={other.display_name}
+              size={36}
+            />
             <span className="text-foreground font-medium">
               {other.display_name}
             </span>

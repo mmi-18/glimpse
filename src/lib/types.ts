@@ -1,4 +1,5 @@
 export type UserType = "creator" | "startup";
+export type MembershipTier = "free" | "pro";
 
 export type UserRow = {
   id: string;
@@ -12,6 +13,17 @@ export type UserRow = {
   languages: string[] | null;
   cultural_markets: string[] | null;
   onboarding_completed: boolean;
+  membership_tier: MembershipTier;
+  created_at: string;
+};
+
+export type BriefRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  reference_image_urls: string[] | null;
+  active: boolean;
   created_at: string;
 };
 
@@ -54,6 +66,8 @@ export type CreatorProfile = StyleVector & {
   showreel_url: string | null;
   avg_rating: number | null;
   review_count: number;
+  portfolio_layout: unknown | null;
+  about_layout: unknown | null;
 };
 
 export type StartupProfile = StyleVector & {
@@ -110,6 +124,10 @@ export type PostRow = StyleVector & {
   likes_count: number;
   views_count: number;
   created_at: string;
+  /** User-arranged grid layout. When null, default layout is computed. */
+  cell_layout: unknown | null;
+  /** Mini-mosaic that renders inside the uniform feed tile. */
+  preview_layout: unknown | null;
 };
 
 export type ConversationRow = {

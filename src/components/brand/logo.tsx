@@ -14,26 +14,34 @@ export function Logo({
   className?: string;
 }) {
   const textSize =
-    size === "lg" ? "text-3xl" : size === "md" ? "text-xl" : "text-base";
-  const iconPx = size === "lg" ? 40 : size === "md" ? 28 : 22;
+    size === "lg" ? "text-3xl" : size === "md" ? "text-2xl" : "text-base";
+  const iconPx = size === "lg" ? 56 : size === "md" ? 44 : 32;
 
   return (
     <Link
       href={href}
-      className={cn("inline-flex items-center gap-2", className)}
+      className={cn("inline-flex items-center gap-3", className)}
     >
       {showIcon && (
-        <Image
-          src="/images/glimpse-logo.jpeg"
-          alt="glimpse."
-          width={iconPx}
-          height={iconPx}
-          className="rounded-full object-cover"
-          priority
-        />
+        <div
+          className="bg-foreground relative flex items-center justify-center overflow-hidden rounded-2xl"
+          style={{ width: iconPx, height: iconPx }}
+        >
+          <Image
+            src="/images/glimpse-logo.png"
+            alt="glimpse."
+            width={iconPx}
+            height={iconPx}
+            className="h-full w-full object-cover"
+            priority
+          />
+        </div>
       )}
       <span
-        className={cn("brand-wordmark text-foreground leading-none", textSize)}
+        className={cn(
+          "brand-wordmark text-foreground leading-none",
+          textSize,
+        )}
       >
         glimpse.
       </span>

@@ -2,12 +2,11 @@
  * glimpse. seed script
  *
  * Prereqs:
- *   1. Run the SQL migration at supabase/migrations/0001_init.sql in the Supabase dashboard
+ *   1. Run the SQL migrations at supabase/migrations/ in the Supabase dashboard
+ *      (both 0001_init.sql and 0002_membership_and_briefs.sql)
  *   2. .env.local must contain NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY
  *
  * Run:  npm run seed
- *
- * Idempotent: safe to re-run. Uses fixed emails as the identity key.
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
@@ -38,8 +37,6 @@ const SEED_PASSWORD = "glimpse-seed-2026";
 const enc = (p: string) => "/" + p.split("/").map(encodeURIComponent).join("/");
 const seedImg = (folder: string, file: string) =>
   enc(`seed/${folder}/${file}`);
-const avatar = (seed: string) =>
-  `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(seed)}`;
 
 async function ensureAuthUser(
   client: SupabaseClient,
@@ -47,7 +44,6 @@ async function ensureAuthUser(
   userType: "creator" | "startup",
   displayName: string,
 ): Promise<string> {
-  // Check if user exists
   const { data: list, error: listErr } = await client.auth.admin.listUsers({
     page: 1,
     perPage: 200,
@@ -68,11 +64,13 @@ async function ensureAuthUser(
 }
 
 // ---------------------------------------------------------------------------
-// Seed data
+// Types
 // ---------------------------------------------------------------------------
 
 type CreatorSeed = {
   email: string;
+  avatar: string;
+  membership: "free" | "pro";
   user: {
     display_name: string;
     location_city: string;
@@ -87,6 +85,8 @@ type CreatorSeed = {
 
 type StartupSeed = {
   email: string;
+  avatar: string | null; // null → initials fallback
+  membership: "free" | "pro";
   user: {
     display_name: string;
     location_city: string;
@@ -98,21 +98,26 @@ type StartupSeed = {
   posts: Array<Record<string, unknown>>;
 };
 
+// ---------------------------------------------------------------------------
+// Creators (5 consolidated profiles)
+// ---------------------------------------------------------------------------
+
 const creators: CreatorSeed[] = [
   {
     email: "kiri@seed.glimpse.app",
+    avatar: "/avatars/1.jpg",
+    membership: "pro",
     user: {
       display_name: "Kiri",
       location_city: "Munich",
       location_country: "Germany",
       languages: ["German", "English"],
       cultural_markets: ["DACH", "EU"],
-      bio: "I chase moments where aesthetics meet emotion. Whether it's a yacht at golden hour or a classic car on a mountain road, I want every frame to feel intentional.",
+      bio: "I grew up between boats, mountains, and my father's workshop — which is probably why I chase moments where aesthetics meet emotion. Whether it's a yacht at golden hour or a classic car on a mountain road, I want every frame to feel intentional. I shoot slowly. I wait for the light. I think a good image should breathe.\n\nCurrently based in Munich, but I work across the DACH region and Southern Europe. I travel light — a mirrorless body, two primes, a drone, and whatever the project actually needs. I care about craft over volume: I'd rather deliver 15 frames that sing than 300 that are fine.",
     },
     profile: {
       discipline: "both",
       content_categories: ["luxury_lifestyle", "maritime", "automotive"],
-      content_style_tags: ["cinematic", "polished", "moody", "editorial"],
       deliverable_types: ["photo_series", "short_social", "long_brand_film"],
       rate_min: 500,
       rate_max: 1200,
@@ -122,7 +127,11 @@ const creators: CreatorSeed[] = [
         "color_grading",
         "lifestyle_photography",
       ],
-      industry_experience: ["luxury_lifestyle", "automotive", "travel_adventure"],
+      industry_experience: [
+        "luxury_lifestyle",
+        "automotive",
+        "travel_adventure",
+      ],
       travel_willingness: "worldwide",
       preferred_project_types: [
         "brand_content",
@@ -201,13 +210,15 @@ const creators: CreatorSeed[] = [
   },
   {
     email: "max@seed.glimpse.app",
+    avatar: "/avatars/2.jpg",
+    membership: "free",
     user: {
       display_name: "Max",
       location_city: "Berlin",
       location_country: "Germany",
       languages: ["German", "English"],
       cultural_markets: ["DACH", "EU"],
-      bio: "From mosh pits to mountain peaks — I thrive in environments with raw energy. No retouching, no staging, just the moment.",
+      bio: "From mosh pits to mountain peaks — I thrive in environments with raw energy. No retouching, no staging, just the moment. I started in music venues shooting bands for free, and somewhere along the way that lens turned outward: now I spend half my year on expeditions and the other half in sweaty clubs, and honestly I can't tell you which I prefer.\n\nI work best when I'm not supposed to be there — off-stage, backstage, off-trail. The best frames come from being quiet and waiting. I deliver fast: rough selects within 24 hours of a shoot, finals in a week.",
     },
     profile: {
       discipline: "both",
@@ -216,13 +227,6 @@ const creators: CreatorSeed[] = [
         "outdoor_adventure",
         "nature_landscape",
         "automotive",
-      ],
-      content_style_tags: [
-        "moody",
-        "raw",
-        "atmospheric",
-        "documentary",
-        "energetic",
       ],
       deliverable_types: ["photo_series", "event_coverage", "short_social"],
       rate_min: 400,
@@ -342,179 +346,85 @@ const creators: CreatorSeed[] = [
     ],
   },
   {
-    email: "kai@seed.glimpse.app",
+    email: "nico@seed.glimpse.app",
+    avatar: "/avatars/3.jpg",
+    membership: "pro",
     user: {
-      display_name: "Kai Lindstrom",
-      location_city: "Gothenburg",
-      location_country: "Sweden",
-      languages: ["Swedish", "English"],
-      cultural_markets: ["Nordics", "EU"],
-      bio: "The sea teaches patience. I wait for the light, the spray, the moment a sail catches the wind just right.",
+      display_name: "Nico Castellano",
+      location_city: "Monaco",
+      location_country: "Monaco",
+      languages: ["French", "Italian", "English"],
+      cultural_markets: ["EU", "US"],
+      bio: "Luxury, for me, lives in the details — the light on the water, the curve of a hull, the stillness of a sunset at sea. I grew up between Monaco and the Ligurian coast, which is the unfair head start of my career: I was handed the Mediterranean as a studio before I could drive.\n\nI specialize in marine and coastal work for luxury brands — yachts, villas, destination campaigns. I shoot from drones, RIBs, and tenders, and I'll happily jump in the water with housing if the shot is there. I deliver hero stills and short-form cinematic pieces that feel effortless, because that's the feeling luxury buys.",
     },
     profile: {
       discipline: "both",
-      content_categories: ["maritime", "sailing", "travel"],
-      content_style_tags: ["cinematic", "warm", "golden_hour", "editorial"],
-      deliverable_types: ["photo_series", "short_social", "long_brand_film"],
-      rate_min: 600,
-      rate_max: 1100,
+      content_categories: ["marine", "luxury", "lifestyle"],
+      deliverable_types: ["short_social", "photo_series", "long_brand_film"],
+      rate_min: 800,
+      rate_max: 2000,
       availability: "within_1_week",
-      industry_experience: ["luxury_lifestyle", "travel_adventure", "outdoor_sport"],
+      industry_experience: [
+        "luxury_lifestyle",
+        "travel_adventure",
+        "real_estate",
+      ],
       travel_willingness: "worldwide",
-      preferred_project_types: ["brand_content", "lifestyle_documentation"],
-      unwanted_work_types: ["corporate_events"],
+      preferred_project_types: [
+        "luxury_brand_content",
+        "lifestyle_documentation",
+        "product_launch",
+      ],
+      unwanted_work_types: ["budget_projects", "corporate_headshots"],
       creative_philosophy:
-        "The sea teaches patience. I wait for the light, the spray, the moment a sail catches the wind just right.",
+        "Luxury is in the details — the light on the water, the curve of a hull, the stillness of a sunset at sea. I make it feel effortless.",
       creative_discipline: "both",
-      style_production_value: 8,
+      style_production_value: 9,
       style_pacing: 3,
-      style_focus: 5,
+      style_focus: 6,
       style_framing: 8,
-      style_staging: 4,
-      style_color: 7,
-      style_sound: 3,
+      style_staging: 5,
+      style_color: 8,
+      style_sound: 4,
     },
     posts: [
       {
-        title: "Golden Hour Crossing",
+        title: "Mediterranean — Water, Light, Machines",
         description:
-          "Classic sailing yacht cutting through deep blue water at sunset. Water-level perspective.",
-        media_urls: [enc("seed/Gemini_yachting.png")],
+          "Three studies of the Mediterranean: a classic sailing yacht at golden hour, a sleek speedboat carving through calm water at sunset, and the vertical drama of a volcanic coastline. Shot across three seasons, stitched together for a luxury travel editorial.",
+        media_urls: [
+          enc("seed/Gemini_yachting.png"),
+          enc("seed/Gemini_speedboat.png"),
+          enc("seed/Gemini_tropicallandscape.png"),
+        ],
         content_type: "photo_series",
         industry: "luxury_lifestyle",
         format: "horizontal",
-        style_production_value: 8,
-        style_pacing: 2,
+        style_production_value: 9,
+        style_pacing: 3,
         style_focus: 5,
         style_framing: 8,
-        style_staging: 3,
+        style_staging: 4,
         style_color: 8,
         style_sound: 2,
       },
     ],
   },
   {
-    email: "marco@seed.glimpse.app",
-    user: {
-      display_name: "Marco Veltri",
-      location_city: "Milan",
-      location_country: "Italy",
-      languages: ["Italian", "English"],
-      cultural_markets: ["EU"],
-      bio: "I'm drawn to machines that have a story. The older the aircraft, the more character in the frame.",
-    },
-    profile: {
-      discipline: "photo",
-      content_categories: ["aviation", "transport", "vintage"],
-      content_style_tags: ["nostalgic", "muted", "documentary", "film_look"],
-      deliverable_types: ["photo_series", "product_video"],
-      rate_min: 450,
-      rate_max: 850,
-      availability: "within_1_week",
-      industry_experience: ["automotive", "travel_adventure"],
-      travel_willingness: "international",
-      preferred_project_types: ["editorial", "heritage_brands"],
-      unwanted_work_types: ["social_media_reels", "fast_turnaround"],
-      creative_philosophy:
-        "I'm drawn to machines that have a story. The older the aircraft, the more character in the frame.",
-      creative_discipline: "photographer",
-      style_production_value: 7,
-      style_pacing: 2,
-      style_focus: 7,
-      style_framing: 6,
-      style_staging: 3,
-      style_color: 4,
-      style_sound: 2,
-    },
-    posts: [
-      {
-        title: "Dawn at the Airfield",
-        description:
-          "Vintage propeller aircraft on a misty grass airfield. First light, no people, just the machine and the morning.",
-        media_urls: [enc("seed/Gemini_airplane.png")],
-        content_type: "photo_series",
-        industry: "automotive",
-        format: "horizontal",
-        style_production_value: 7,
-        style_pacing: 1,
-        style_focus: 8,
-        style_framing: 6,
-        style_staging: 2,
-        style_color: 4,
-        style_sound: 1,
-      },
-    ],
-  },
-  {
-    email: "lena@seed.glimpse.app",
-    user: {
-      display_name: "Lena Berger",
-      location_city: "Innsbruck",
-      location_country: "Austria",
-      languages: ["German", "English"],
-      cultural_markets: ["DACH", "EU"],
-      bio: "Mountains demand humility. I go where the weather takes me and let the landscape dictate the frame.",
-    },
-    profile: {
-      discipline: "photo",
-      content_categories: ["mountain_landscape", "nature", "outdoor_adventure"],
-      content_style_tags: ["moody", "atmospheric", "wide_angle", "blue_hour"],
-      deliverable_types: ["photo_series", "long_brand_film"],
-      rate_min: 400,
-      rate_max: 800,
-      availability: "within_1_month",
-      industry_experience: ["outdoor_sport", "travel_adventure", "sustainability"],
-      travel_willingness: "international",
-      preferred_project_types: [
-        "expedition_documentation",
-        "editorial",
-        "brand_content",
-      ],
-      unwanted_work_types: ["studio_work", "product_photography"],
-      creative_philosophy:
-        "Mountains demand humility. I go where the weather takes me and let the landscape dictate the frame.",
-      creative_discipline: "photographer",
-      style_production_value: 6,
-      style_pacing: 1,
-      style_focus: 2,
-      style_framing: 10,
-      style_staging: 1,
-      style_color: 5,
-      style_sound: 1,
-    },
-    posts: [
-      {
-        title: "Blue Hour Valley",
-        description:
-          "Alpine valley at dusk. River winding through steep mountain walls, clouds touching the peaks.",
-        media_urls: [enc("seed/Gemini_mountains.png")],
-        content_type: "photo_series",
-        industry: "outdoor_sport",
-        format: "horizontal",
-        style_production_value: 6,
-        style_pacing: 1,
-        style_focus: 1,
-        style_framing: 10,
-        style_staging: 1,
-        style_color: 5,
-        style_sound: 1,
-      },
-    ],
-  },
-  {
     email: "tom@seed.glimpse.app",
+    avatar: "/avatars/4.jpg",
+    membership: "free",
     user: {
       display_name: "Tom Ashworth",
       location_city: "London",
       location_country: "UK",
       languages: ["English"],
       cultural_markets: ["UK", "EU"],
-      bio: "Motorsport is controlled chaos. My job is to find the fraction of a second where speed becomes art.",
+      bio: "Motorsport is controlled chaos, and my job is to find the fraction of a second where speed becomes art. I started in rally, moved to circuit work, and now I split my time between superbike rounds, forest stages, and the occasional vintage aircraft show — anything with an engine and a story.\n\nI like machines that have been used. Scratched paint, track dust, oil on the fairing. That's the character clients actually buy, even if they don't know it yet. I work fast, carry my own gear to the edge of the track, and deliver pan-blur keepers and clean hero shots in the same gallery.",
     },
     profile: {
       discipline: "both",
-      content_categories: ["motorsport", "automotive", "rally"],
-      content_style_tags: ["action", "editorial", "desaturated", "dynamic"],
+      content_categories: ["motorsport", "automotive", "aviation"],
       deliverable_types: ["photo_series", "short_social", "event_coverage"],
       rate_min: 550,
       rate_max: 1000,
@@ -536,187 +446,87 @@ const creators: CreatorSeed[] = [
     },
     posts: [
       {
-        title: "Gravel Stage — Forest Rally",
+        title: "Machines at Speed — Rally, Track, Sky",
         description:
-          "Vintage rally car drifting through a forest stage. Panning shot, motion blur, dust trail.",
-        media_urls: [enc("seed/Gemini_racingcar.png")],
+          "A cross-discipline set: vintage rally through a forest stage (pan blur, dust trail), a superbike hanging off into a wet corner, and dawn on a grass airfield with a lone propeller plane. Three subjects, one shared language of motion and precision.",
+        media_urls: [
+          enc("seed/Gemini_racingcar.png"),
+          enc("seed/Gemini_superbike.png"),
+          enc("seed/Gemini_airplane.png"),
+        ],
         content_type: "event_coverage",
         industry: "automotive",
         format: "horizontal",
         style_production_value: 8,
-        style_pacing: 8,
+        style_pacing: 7,
         style_focus: 8,
         style_framing: 5,
         style_staging: 2,
-        style_color: 5,
+        style_color: 6,
         style_sound: 5,
       },
     ],
   },
   {
-    email: "sofia@seed.glimpse.app",
+    email: "lena@seed.glimpse.app",
+    avatar: "/avatars/5.jpg",
+    membership: "free",
     user: {
-      display_name: "Sofia Reyes",
-      location_city: "Lisbon",
-      location_country: "Portugal",
-      languages: ["Portuguese", "Spanish", "English"],
-      cultural_markets: ["EU", "US"],
-      bio: "I follow coastlines. Every cliff, every cove has a different story depending on the light and the tide.",
-    },
-    profile: {
-      discipline: "photo",
-      content_categories: ["travel", "coastal", "nature"],
-      content_style_tags: ["vibrant", "natural", "editorial", "warm"],
-      deliverable_types: ["photo_series", "short_social"],
-      rate_min: 350,
-      rate_max: 750,
-      availability: "within_1_week",
-      industry_experience: ["travel_adventure", "lifestyle", "outdoor_sport"],
-      travel_willingness: "worldwide",
-      preferred_project_types: [
-        "travel_editorial",
-        "brand_content",
-        "destination_marketing",
-      ],
-      unwanted_work_types: ["studio_work", "corporate_events"],
-      creative_philosophy:
-        "I follow coastlines. Every cliff, every cove has a different story depending on the light and the tide.",
-      creative_discipline: "photographer",
-      style_production_value: 7,
-      style_pacing: 3,
-      style_focus: 3,
-      style_framing: 9,
-      style_staging: 2,
-      style_color: 7,
-      style_sound: 2,
-    },
-    posts: [
-      {
-        title: "Cliff Edge — Tropical Coast",
-        description:
-          "Dramatic coastline from above. Turquoise water, volcanic rock, a single boat far below.",
-        media_urls: [enc("seed/Gemini_tropicallandscape.png")],
-        content_type: "photo_series",
-        industry: "travel_adventure",
-        format: "horizontal",
-        style_production_value: 7,
-        style_pacing: 2,
-        style_focus: 2,
-        style_framing: 9,
-        style_staging: 1,
-        style_color: 7,
-        style_sound: 1,
-      },
-    ],
-  },
-  {
-    email: "jonas@seed.glimpse.app",
-    user: {
-      display_name: "Jonas Kramer",
-      location_city: "Cologne",
-      location_country: "Germany",
+      display_name: "Lena Berger",
+      location_city: "Innsbruck",
+      location_country: "Austria",
       languages: ["German", "English"],
-      cultural_markets: ["DACH", "EU"],
-      bio: "Two wheels, 300 km/h, one chance to nail the shot. That pressure is what makes it worth it.",
-    },
-    profile: {
-      discipline: "both",
-      content_categories: ["motorsport", "motorcycle", "action"],
-      content_style_tags: ["dynamic", "high_contrast", "dramatic", "panning"],
-      deliverable_types: ["photo_series", "short_social", "event_coverage"],
-      rate_min: 500,
-      rate_max: 950,
-      availability: "immediately",
-      industry_experience: ["automotive", "outdoor_sport"],
-      travel_willingness: "international",
-      preferred_project_types: [
-        "event_coverage",
-        "brand_content",
-        "product_launch",
-      ],
-      unwanted_work_types: ["food_photography", "real_estate"],
-      creative_philosophy:
-        "Two wheels, 300 km/h, one chance to nail the shot. That pressure is what makes it worth it.",
-      creative_discipline: "both",
-      style_production_value: 8,
-      style_pacing: 8,
-      style_focus: 9,
-      style_framing: 5,
-      style_staging: 3,
-      style_color: 8,
-      style_sound: 7,
-    },
-    posts: [
-      {
-        title: "Knee Down — Wet Track",
-        description:
-          "Superbike leaning deep into a corner, wet track reflections, panning motion blur.",
-        media_urls: [enc("seed/Gemini_superbike.png")],
-        content_type: "event_coverage",
-        industry: "automotive",
-        format: "horizontal",
-        style_production_value: 8,
-        style_pacing: 9,
-        style_focus: 9,
-        style_framing: 4,
-        style_staging: 2,
-        style_color: 8,
-        style_sound: 6,
-      },
-    ],
-  },
-  {
-    email: "astrid@seed.glimpse.app",
-    user: {
-      display_name: "Astrid Holm",
-      location_city: "Tromso",
-      location_country: "Norway",
-      languages: ["Norwegian", "English"],
-      cultural_markets: ["Nordics", "EU"],
-      bio: "The fjords teach you to be still. I wait for the moment the water goes perfectly flat and the world holds its breath.",
+      cultural_markets: ["DACH", "Nordics", "EU"],
+      bio: "Mountains demand humility. I go where the weather takes me and let the landscape dictate the frame — I don't fight it, I wait. That patience shows up in the work: long exposures, wide compositions, a lot of blue hour. My camera bag spends more time on a glacier than in a studio, and I'm honestly not sure I could shoot a product on white if you asked me to.\n\nI split my year between the Alps and the Nordics. I mostly work with outdoor, sustainability, and expedition brands — the ones who understand that the best shot is the one you had to earn.",
     },
     profile: {
       discipline: "photo",
-      content_categories: ["nature_landscape", "wilderness", "nordic"],
-      content_style_tags: [
-        "meditative",
-        "muted",
-        "scandinavian",
-        "minimalist",
+      content_categories: [
+        "mountain_landscape",
+        "nature_landscape",
+        "nordic",
+        "outdoor_adventure",
       ],
       deliverable_types: ["photo_series", "long_brand_film"],
-      rate_min: 450,
-      rate_max: 900,
+      rate_min: 400,
+      rate_max: 800,
       availability: "within_1_month",
-      industry_experience: ["outdoor_sport", "sustainability", "travel_adventure"],
-      travel_willingness: "national",
+      industry_experience: [
+        "outdoor_sport",
+        "travel_adventure",
+        "sustainability",
+      ],
+      travel_willingness: "international",
       preferred_project_types: [
+        "expedition_documentation",
         "editorial",
         "brand_content",
-        "expedition_documentation",
       ],
       unwanted_work_types: [
-        "fast_turnaround",
-        "corporate_events",
         "studio_work",
+        "product_photography",
+        "fast_turnaround",
       ],
       creative_philosophy:
-        "The fjords teach you to be still. I wait for the moment the water goes perfectly flat and the world holds its breath.",
+        "Mountains demand humility. I go where the weather takes me and let the landscape dictate the frame.",
       creative_discipline: "photographer",
       style_production_value: 6,
       style_pacing: 1,
       style_focus: 1,
       style_framing: 10,
       style_staging: 1,
-      style_color: 3,
+      style_color: 4,
       style_sound: 1,
     },
     posts: [
       {
-        title: "Morning Stillness — Lofoten",
+        title: "North — Alps to the Fjord",
         description:
-          "Norwegian fjord at dawn. Mirror water, fog on the surface, a single red cabin on the shore.",
-        media_urls: [enc("seed/Gemini_fjord.png")],
+          "A two-part study in stillness. The Alpine valley at dusk, and a Norwegian fjord at dawn — both about waiting for the moment the world holds its breath.",
+        media_urls: [
+          enc("seed/Gemini_mountains.png"),
+          enc("seed/Gemini_fjord.png"),
+        ],
         content_type: "photo_series",
         industry: "outdoor_sport",
         format: "horizontal",
@@ -725,72 +535,22 @@ const creators: CreatorSeed[] = [
         style_focus: 1,
         style_framing: 10,
         style_staging: 1,
-        style_color: 3,
+        style_color: 4,
         style_sound: 1,
-      },
-    ],
-  },
-  {
-    email: "nico@seed.glimpse.app",
-    user: {
-      display_name: "Nico Castellano",
-      location_city: "Monaco",
-      location_country: "Monaco",
-      languages: ["French", "Italian", "English"],
-      cultural_markets: ["EU", "US"],
-      bio: "Luxury is in the details — the light on the water, the curve of a hull, the stillness of a sunset at sea. I make it feel effortless.",
-    },
-    profile: {
-      discipline: "both",
-      content_categories: ["marine", "luxury", "lifestyle"],
-      content_style_tags: ["premium", "warm", "golden", "aerial"],
-      deliverable_types: ["short_social", "photo_series", "long_brand_film"],
-      rate_min: 800,
-      rate_max: 2000,
-      availability: "within_1_week",
-      industry_experience: ["luxury_lifestyle", "travel_adventure", "real_estate"],
-      travel_willingness: "worldwide",
-      preferred_project_types: [
-        "luxury_brand_content",
-        "lifestyle_documentation",
-        "product_launch",
-      ],
-      unwanted_work_types: ["budget_projects", "corporate_headshots"],
-      creative_philosophy:
-        "Luxury is in the details — the light on the water, the curve of a hull, the stillness of a sunset at sea. I make it feel effortless.",
-      creative_discipline: "both",
-      style_production_value: 9,
-      style_pacing: 3,
-      style_focus: 6,
-      style_framing: 8,
-      style_staging: 5,
-      style_color: 8,
-      style_sound: 4,
-    },
-    posts: [
-      {
-        title: "Mediterranean Sunset Run",
-        description:
-          "Sleek speedboat cutting through calm water at sunset. Drone perspective, golden light on the wake.",
-        media_urls: [enc("seed/Gemini_speedboat.png")],
-        content_type: "photo_series",
-        industry: "luxury_lifestyle",
-        format: "horizontal",
-        style_production_value: 9,
-        style_pacing: 3,
-        style_focus: 6,
-        style_framing: 8,
-        style_staging: 4,
-        style_color: 8,
-        style_sound: 3,
       },
     ],
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Startups (3 — Heimplanet Free, DeepDrive Pro, Voltfang Pro)
+// ---------------------------------------------------------------------------
+
 const startups: StartupSeed[] = [
   {
     email: "heimplanet@seed.glimpse.app",
+    avatar: null,
+    membership: "free",
     user: {
       display_name: "Heimplanet",
       location_city: "Hamburg",
@@ -829,10 +589,13 @@ const startups: StartupSeed[] = [
     },
     posts: [
       {
-        title: "Looking for: Outdoor Content Creator",
+        title: "Looking for: Outdoor Content Creator — Summer Series",
         description:
-          "We need 10-20 second vertical clips capturing immersive Heimplanet moments — the view after a hike, morning coffee at camp, a tent in the wind. Raw, authentic, not overly produced.",
-        media_urls: [],
+          "We're planning a three-month social series around our inflatable tent line and need a creator who lives the lifestyle, not just shoots it.\n\n• 10–20 second vertical clips, 4–6 per week\n• Authentic morning-coffee-at-camp energy, not pitched ad content\n• Self-directed shoots in Germany, Austria, and the Alps\n• Comfortable filming solo with minimal kit\n• Must own and use our gear (or be genuinely excited to)\n• Budget: €500–2,000 per delivery block, depending on scope",
+        media_urls: [
+          seedImg("Nature Adventure Max", "DSC08071-Enhanced-NR.jpg"),
+          seedImg("Nature Adventure Max", "DSC02058.jpg"),
+        ],
         content_type: "short_social",
         industry: "outdoor_sport",
         format: "vertical",
@@ -848,6 +611,8 @@ const startups: StartupSeed[] = [
   },
   {
     email: "deepdrive@seed.glimpse.app",
+    avatar: null,
+    membership: "pro",
     user: {
       display_name: "DeepDrive",
       location_city: "Munich",
@@ -871,7 +636,7 @@ const startups: StartupSeed[] = [
       target_audience: ["b2b_decision_makers", "tech_enthusiasts", "investors"],
       qualities_in_creator: ["reliability", "speed", "brand_understanding"],
       brand_description:
-        "Electric mobility deep tech startup. We build the most efficient electric motors. Our brand is simple but bold, professional but electrifying. We need a 30-40 second website video showing our production process.",
+        "Electric mobility deep-tech startup. We build the most efficient electric motors in the world. Our brand is simple but bold, professional but electrifying. We want every frame to feel like precision engineering.",
       style_production_value: 9,
       style_pacing: 8,
       style_focus: 9,
@@ -882,10 +647,13 @@ const startups: StartupSeed[] = [
     },
     posts: [
       {
-        title: "Hiring: Website Video Production",
+        title: "Hiring: Production Process Film — Electric Motor Launch",
         description:
-          "30-40 second fast-paced visual sequence of our entire production process. From wire to assembled electric motor. Clean, professional, high-end. Scripted scene list provided.",
-        media_urls: [],
+          "30–40 second cinematic film covering our full in-wheel motor production process, from copper wire to assembled drive unit. This is our hero asset for the Series A launch — it needs to feel engineered, not produced.\n\n• Tight, fast-cut sequence with rhythm-driven edit\n• Macro-heavy, industrial color palette, minimal color grade\n• Access to our Munich factory floor for a 2-day shoot window\n• Scripted shot list provided; we want a DP, not a storyteller\n• Final delivery: web hero + 6 platform cutdowns\n• Budget: €4,000–5,000 all-in including post",
+        media_urls: [
+          seedImg("Transportation Max", "DSC06100.jpg"),
+          seedImg("Transportation Max", "DSC04455 Kopie.jpg"),
+        ],
         content_type: "long_brand_film",
         industry: "tech_saas",
         format: "horizontal",
@@ -900,64 +668,76 @@ const startups: StartupSeed[] = [
     ],
   },
   {
-    email: "bmw-motorrad@seed.glimpse.app",
+    email: "voltfang@seed.glimpse.app",
+    avatar: "/images/voltfang-logo.png",
+    membership: "pro",
     user: {
-      display_name: "BMW Motorrad",
-      location_city: "Munich",
+      display_name: "Voltfang",
+      location_city: "Aachen",
       location_country: "Germany",
       languages: ["German", "English"],
-      cultural_markets: ["DACH", "EU", "US", "Global"],
+      cultural_markets: ["DACH", "EU"],
     },
     profile: {
-      company_name: "BMW Motorrad",
-      industry: "automotive",
-      location_market: ["DACH", "EU", "US", "Global"],
-      contact_person: "Andrea Kern",
-      contact_role: "Senior Brand Content Manager",
-      company_stage: "established",
-      typical_budget_range_min: 3000,
-      typical_budget_range_max: 15000,
-      project_goal: ["product_launch", "brand_awareness", "social_growth"],
-      desired_look_feeling: ["premium", "dynamic", "cinematic", "bold"],
-      deliverables_needed: ["photo_series", "short_social", "long_brand_film"],
-      content_usage_platforms: ["instagram", "youtube", "website", "paid_ads"],
-      target_audience: ["millennials", "gen_z", "motorcycle_enthusiasts"],
+      company_name: "Voltfang",
+      industry: "sustainability",
+      location_market: ["DACH", "EU"],
+      contact_person: "Leah Bergmann",
+      contact_role: "Head of Brand",
+      company_stage: "series_a",
+      typical_budget_range_min: 2000,
+      typical_budget_range_max: 8000,
+      project_goal: ["brand_awareness", "product_launch", "website_content"],
+      desired_look_feeling: ["premium", "warm", "grounded", "cinematic"],
+      deliverables_needed: ["photo_series", "long_brand_film", "short_social"],
+      content_usage_platforms: ["website", "linkedin", "instagram", "youtube"],
+      target_audience: [
+        "b2b_decision_makers",
+        "investors",
+        "tech_enthusiasts",
+      ],
       qualities_in_creator: [
         "creativity",
-        "reliability",
-        "speed",
         "brand_understanding",
+        "reliability",
       ],
       brand_description:
-        "BMW Motorrad is looking for visual creators who can capture the thrill and precision of our motorcycles. We want content that makes you feel the ride — dynamic, premium, and emotionally charged.",
-      style_production_value: 9,
-      style_pacing: 7,
-      style_focus: 8,
+        "Voltfang builds battery energy storage systems from second-life EV batteries. Our mission is industrial-scale circularity: giving retired EV batteries a decade of second life as stationary storage for businesses, utilities, and the grid. We want visuals that feel warm and confident — sustainability without the cliché.",
+      style_production_value: 8,
+      style_pacing: 4,
+      style_focus: 7,
       style_framing: 6,
-      style_staging: 6,
-      style_color: 7,
-      style_sound: 7,
+      style_staging: 5,
+      style_color: 6,
+      style_sound: 4,
     },
     posts: [
       {
-        title: "Seeking: Motorcycle Content Creator for R 1300 GS Launch",
+        title: "Hiring: Visual Storyteller for Second-Life Battery Campaign",
         description:
-          "We're launching the new R 1300 GS and need a content creator for a 3-day shoot in the Alps. Deliverables: 15-20 hero images + 3 short-form social clips (15-30s each). Must capture the bike in motion and at rest in dramatic mountain scenery. Cinematic, bold, premium feel. Experience with automotive/motorcycle content preferred.",
-        media_urls: [seedImg("Transportation Max", "DSC06191.jpg")],
+          "We're launching our commercial battery storage line and need a creator to help us visually tell the circularity story — the batteries inside our systems have already powered cars for 8 years, and have another decade in them.\n\n• Photo series + 45s brand film for the product launch\n• Industrial environments: our Aachen facility, customer sites, a battery disassembly line\n• Warm, confident aesthetic — premium but grounded, no generic green-wash visuals\n• Strong editorial eye for people-at-work, machines, and material detail\n• Experience in sustainability, industrial, or tech storytelling preferred\n• Rights: full buyout across web, social, paid, and trade\n• Budget: €5,000–8,000 depending on scope and travel",
+        media_urls: [
+          enc("seed/Voltfang/image1.png"),
+          enc("seed/Voltfang/image2.png"),
+        ],
         content_type: "photo_series",
-        industry: "automotive",
+        industry: "sustainability",
         format: "horizontal",
-        style_production_value: 9,
-        style_pacing: 7,
-        style_focus: 8,
+        style_production_value: 8,
+        style_pacing: 4,
+        style_focus: 7,
         style_framing: 6,
         style_staging: 5,
-        style_color: 7,
-        style_sound: 6,
+        style_color: 6,
+        style_sound: 4,
       },
     ],
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Reviews
+// ---------------------------------------------------------------------------
 
 type ReviewSeed = {
   reviewer: string;
@@ -1008,16 +788,28 @@ const reviews: ReviewSeed[] = [
       "Clear brief, well-organized shoot day, fast payment. The team knew exactly what they wanted, which made the whole process smooth.",
   },
   {
-    reviewer: "bmw-motorrad@seed.glimpse.app",
-    reviewed: "max@seed.glimpse.app",
+    reviewer: "voltfang@seed.glimpse.app",
+    reviewed: "lena@seed.glimpse.app",
     project_description:
-      "Motorcycle lifestyle shoot for R nineT campaign — 2 day shoot in Bavaria",
+      "Sustainability editorial shoot — 3 day facility + customer site documentation",
     rating_overall: 5,
     rating_reliability: 5,
     rating_quality: 5,
     rating_collaboration: 5,
     review_text:
-      "Max nailed the brief perfectly. Every frame felt premium and authentic. Fast turnaround, great communication, and the final selects exceeded expectations. Already planning the next project together.",
+      "Lena treated our factory floor like a landscape — patient, quiet, and somehow ended up with frames that felt both industrial and warm. She got the story we've struggled to tell for a year.",
+  },
+  {
+    reviewer: "voltfang@seed.glimpse.app",
+    reviewed: "max@seed.glimpse.app",
+    project_description:
+      "Event coverage — Hannover Messe booth and customer testimonials",
+    rating_overall: 5,
+    rating_reliability: 4,
+    rating_quality: 5,
+    rating_collaboration: 5,
+    review_text:
+      "Fast, unobtrusive, and genuinely engaged with the subject matter. Max walked the floor like a journalist and delivered a story, not just coverage.",
   },
 ];
 
@@ -1038,13 +830,14 @@ async function seedCreator(c: CreatorSeed) {
     email: c.email,
     user_type: "creator",
     display_name: c.user.display_name,
-    avatar_url: avatar(c.user.display_name),
+    avatar_url: c.avatar,
     bio: c.user.bio,
     location_city: c.user.location_city,
     location_country: c.user.location_country,
     languages: c.user.languages,
     cultural_markets: c.user.cultural_markets,
     onboarding_completed: true,
+    membership_tier: c.membership,
   });
   if (userErr) throw userErr;
 
@@ -1053,7 +846,6 @@ async function seedCreator(c: CreatorSeed) {
     .upsert({ user_id: id, ...c.profile });
   if (profErr) throw profErr;
 
-  // Reset posts for idempotent seed
   const { error: delErr } = await supabase
     .from("posts")
     .delete()
@@ -1064,8 +856,7 @@ async function seedCreator(c: CreatorSeed) {
     user_id: id,
     post_type: "portfolio_piece",
     ...p,
-    thumbnail_url:
-      (p.media_urls as string[])[0] ?? null,
+    thumbnail_url: (p.media_urls as string[])[0] ?? null,
   }));
   const { error: postsErr } = await supabase.from("posts").insert(postRows);
   if (postsErr) throw postsErr;
@@ -1087,12 +878,13 @@ async function seedStartup(s: StartupSeed) {
     email: s.email,
     user_type: "startup",
     display_name: s.user.display_name,
-    avatar_url: avatar(s.user.display_name),
+    avatar_url: s.avatar,
     location_city: s.user.location_city,
     location_country: s.user.location_country,
     languages: s.user.languages,
     cultural_markets: s.user.cultural_markets,
     onboarding_completed: true,
+    membership_tier: s.membership,
   });
   if (userErr) throw userErr;
 
@@ -1121,7 +913,6 @@ async function seedStartup(s: StartupSeed) {
 }
 
 async function seedReviews(emailToId: Map<string, string>) {
-  // Wipe seed reviews first (delete reviews authored by any seeded email)
   const seedIds = Array.from(emailToId.values());
   const { error: delErr } = await supabase
     .from("reviews")

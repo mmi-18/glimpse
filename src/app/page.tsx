@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
+import { Logo } from "@/components/brand/logo";
 
 export default async function Home() {
   const user = await getCurrentUser();
@@ -12,17 +12,7 @@ export default async function Home() {
     <div className="bg-background flex min-h-screen flex-col">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
         <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/images/glimpse-logo.jpeg"
-              alt="glimpse."
-              width={40}
-              height={40}
-              className="rounded-full"
-              priority
-            />
-            <span className="brand-wordmark text-2xl">glimpse.</span>
-          </div>
+          <Logo href="/" size="md" />
           <div className="flex items-center gap-4">
             <Link
               href="/login"
