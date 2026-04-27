@@ -69,29 +69,39 @@ export default async function ConversationPage({
   const profileHref =
     other.user_type === "creator"
       ? `/creator/${other.id}`
-      : "#";
+      : `/startup/${other.id}`;
 
   return (
     <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-3xl flex-col px-4 py-4 md:h-[calc(100vh-4rem)] md:px-6">
-      <div className="border-border mb-4 flex items-center justify-between border-b pb-4">
-        <Link
-          href="/inbox"
-          className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <Link href={profileHref} className="flex items-center gap-3">
+      <div className="border-border mb-4 flex items-center justify-between gap-3 border-b pb-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <Link
+            href="/inbox"
+            aria-label="Back to inbox"
+            className="text-muted-foreground hover:text-foreground inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <Link
+            href={profileHref}
+            className="flex min-w-0 items-center gap-3 hover:opacity-80"
+          >
             <Avatar
               src={other.avatar_url}
               name={other.display_name}
               size={36}
             />
-            <span className="text-foreground font-medium">
+            <span className="text-foreground truncate font-medium">
               {other.display_name}
             </span>
           </Link>
-        </Link>
+        </div>
         {conv.match_score != null && (
-          <MatchScoreBadge score={conv.match_score} size="md" />
+          <MatchScoreBadge
+            score={conv.match_score}
+            size="md"
+            className="shrink-0"
+          />
         )}
       </div>
 

@@ -17,7 +17,7 @@ export function BottomNav({
     userId && userType
       ? userType === "creator"
         ? `/creator/${userId}`
-        : "/feed"
+        : `/startup/${userId}`
       : "/login";
 
   const tabs =

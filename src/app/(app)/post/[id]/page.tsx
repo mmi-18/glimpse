@@ -153,7 +153,9 @@ export default async function PostDetailPage({
 
   const isOwn = currentUser?.id === author.id;
   const profileHref =
-    author.user_type === "creator" ? `/creator/${author.id}` : "#";
+    author.user_type === "creator"
+      ? `/creator/${author.id}`
+      : `/startup/${author.id}`;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 md:px-6">

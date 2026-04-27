@@ -7,6 +7,7 @@ import { MessageDialog } from "@/components/messaging/message-dialog";
 import { Avatar } from "@/components/brand/avatar";
 import { Button } from "@/components/ui/button";
 import { ProfileContentGrid } from "@/components/profile/profile-content-grid";
+import { SignOutButton } from "@/components/layout/sign-out-button";
 import { calculateMatchScore } from "@/lib/matching";
 import type {
   CreatorProfile,
@@ -198,6 +199,26 @@ export default async function CreatorProfilePage({
           savedAboutLayout={profile?.about_layout ?? null}
         />
       </div>
+
+      {/* Account (owner only) — primary mobile sign-out path */}
+      {isOwn && (
+        <section className="border-border mt-12 border-t pt-8">
+          <h2 className="text-muted-foreground mb-4 text-xs font-medium uppercase tracking-[0.12em]">
+            Account
+          </h2>
+          <div className="border-border bg-card flex flex-col items-start gap-4 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium">{user.email}</p>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {user.membership_tier === "pro"
+                  ? "Pro account"
+                  : "Free account"}
+              </p>
+            </div>
+            <SignOutButton />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

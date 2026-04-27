@@ -101,7 +101,7 @@ export function TopNav({ user }: { user: NavUser }) {
                 href={
                   user.user_type === "creator"
                     ? `/creator/${user.id}`
-                    : `/feed`
+                    : `/startup/${user.id}`
                 }
                 className="text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm"
               >
