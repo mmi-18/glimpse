@@ -55,7 +55,8 @@ Workers Builds.
 - `npm run cf-typegen` — regenerate `cloudflare-env.d.ts`
 
 **Common gotchas:**
-- Node-only middleware: rename `proxy.ts` → `middleware.ts`, change `export async function proxy` → `export async function middleware`. OpenNext build will fail otherwise.
+- **Do not add a `middleware.ts` or `proxy.ts`.** Next.js 16 runs both on the Node runtime; `@opennextjs/cloudflare` (as of 1.19.4) only supports Edge middleware and will fail with `ERROR Node.js middleware is not currently supported`. Tracking issue: opennextjs/opennextjs-cloudflare#962. Until that ships, do route-protection / session-refresh in Server Components or Server Actions instead. We accept that Supabase sessions don't auto-refresh — when a session token expires, the user is redirected to /login on their next request and re-signs-in.
 - A new server-side dependency that needs `fs`/`path`/`child_process`: it won't run on Workers. Either move the work to a script (`tsx scripts/foo.ts`) or use a Cloudflare-friendly equivalent.
 - Server actions and route handlers are fine — they run on the Worker.
 - The seed script (`scripts/seed.ts`) runs locally only; never deployed.
+- **Cloudflare Workers Builds dashboard build command must be `npm run build:cloudflare`.** If left at the default `npm run build`, wrangler will run an auto-migrate step that overwrites `wrangler.jsonc` with a stripped-down template (losing `vars`, asset bindings, etc.) and then fails on the same middleware error.
